@@ -17,6 +17,8 @@ export default {
     'pages/study-record/index',
     'pages/study-report/index',
     'pages/study-analysis/index',
+    // 'pages/wrong-practice/index',    // 临时注释排查白屏问题
+    // 'pages/favorite-practice/index', // 临时注释排查白屏问题
     'pages/profile/index',
     'pages/admin-import/index'
   ],

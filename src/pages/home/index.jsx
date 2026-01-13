@@ -3,7 +3,7 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { useDidShow, navigateTo } from '@tarojs/taro'
+import { useDidShow, navigateTo, switchTab } from '@tarojs/taro'
 import { useAuth } from '../../context/AuthContext'
 import studyService from '../../services/study'
 import eventBus, { EVENTS } from '../../utils/eventBus'
@@ -109,7 +109,12 @@ function Home() {
   ]
 
   const handleNavigate = (path) => {
-    navigateTo({ url: path })
+    // chat是tabBar页面，需要使用switchTab
+    if (path.includes('/pages/chat/index')) {
+      switchTab({ url: path })
+    } else {
+      navigateTo({ url: path })
+    }
   }
 
   return (

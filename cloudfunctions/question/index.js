@@ -454,34 +454,80 @@ async function toggleFavorite(openid, questionId) {
 }
 
 /**
- * 获取收藏列表
+ * 获取收藏列表（包含完整题目详情）
  */
 async function getFavorites(openid, page = 1, pageSize = 20) {
   try {
     const skip = (page - 1) * pageSize
-    const res = await db.collection('favorites')
+    const favRes = await db.collection('favorites')
       .where({ _openid: openid })
+      .orderBy('createdAt', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get()
-    return { success: true, data: res.data }
+
+    // 获取题目详情
+    const questions = []
+    for (const fav of favRes.data) {
+      try {
+        const qRes = await db.collection(QUESTIONS_COLLECTION).doc(fav.questionId).get()
+        if (qRes.data) {
+          questions.push({
+            ...qRes.data,
+            _id: qRes.data._id || fav.questionId,
+            id: qRes.data.id || fav.questionId,
+            favoriteId: fav._id,
+            favoriteCreatedAt: fav.createdAt
+          })
+        }
+      } catch (e) {
+        // 题目可能不存在，跳过
+        console.log('题目不存在:', fav.questionId)
+      }
+    }
+
+    return { success: true, data: questions }
   } catch (err) {
     return { success: false, message: err.message, data: [] }
   }
 }
 
 /**
- * 获取错题集
+ * 获取错题集（包含完整题目详情）
  */
 async function getWrongQuestions(openid, page = 1, pageSize = 20) {
   try {
     const skip = (page - 1) * pageSize
-    const res = await db.collection('answer_history')
+    const wrongRes = await db.collection('answer_history')
       .where({ _openid: openid, isCorrect: false })
+      .orderBy('createdAt', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get()
-    return { success: true, data: res.data }
+
+    // 获取题目详情，去重（同一错题只保留最新一次）
+    const questionMap = new Map()
+    for (const record of wrongRes.data) {
+      if (!questionMap.has(record.questionId)) {
+        try {
+          const qRes = await db.collection(QUESTIONS_COLLECTION).doc(record.questionId).get()
+          if (qRes.data) {
+            questionMap.set(record.questionId, {
+              ...qRes.data,
+              _id: qRes.data._id || record.questionId,
+              id: qRes.data.id || record.questionId,
+              wrongAnswer: record.answer,
+              wrongAt: record.createdAt
+            })
+          }
+        } catch (e) {
+          // 题目可能不存在，跳过
+          console.log('题目不存在:', record.questionId)
+        }
+      }
+    }
+
+    return { success: true, data: Array.from(questionMap.values()) }
   } catch (err) {
     return { success: false, message: err.message, data: [] }
   }

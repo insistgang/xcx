@@ -73,11 +73,11 @@ function Exercise() {
     { id: 'mock', name: '模拟考试', icon: '📊', duration: '120分钟', gradient: 'orange-yellow', action: () => navigateTo({ url: '/pages/mock-exam/index' }) }
   ]
 
-  // 更多功能 - 指向已存在的页面
+  // 更多功能 - 指向专门页面
   const moreFeatures = [
     { id: 'record', name: '做题记录', icon: '📋', desc: '查看历史记录', path: '/pages/study-record/index' },
-    { id: 'wrong', name: '错题集', icon: '❌', desc: '错题重做练习', path: '/pages/study-record/index' },
-    { id: 'favorite', name: '收藏夹', icon: '⭐', desc: '收藏题目练习', path: '/pages/study-record/index' }
+    { id: 'wrong', name: '错题集', icon: '❌', desc: '错题重做练习', path: '/pages/wrong-practice/index' },
+    { id: 'favorite', name: '收藏夹', icon: '⭐', desc: '收藏题目练习', path: '/pages/favorite-practice/index' }
   ]
 
   return (
@@ -113,7 +113,7 @@ function Exercise() {
           <View className="review-grid">
             <View
               className="review-item review-wrong"
-              onClick={() => navigateTo({ url: '/pages/study-record/index' })}
+              onClick={() => navigateTo({ url: '/pages/wrong-practice/index' })}
             >
               <Text className="review-icon">❌</Text>
               <Text className="review-name">错题重做</Text>
@@ -121,7 +121,7 @@ function Exercise() {
             </View>
             <View
               className="review-item review-favorite"
-              onClick={() => navigateTo({ url: '/pages/study-record/index' })}
+              onClick={() => navigateTo({ url: '/pages/favorite-practice/index' })}
             >
               <Text className="review-icon">⭐</Text>
               <Text className="review-name">收藏练习</Text>
