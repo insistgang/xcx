@@ -435,7 +435,31 @@ function ExerciseDetail() {
 
     try {
       let data
-      if (mode === 'random') {
+      if (mode === 'wrong') {
+        // 错题重做模式：从云函数获取真实的错题列表
+        console.log('=== 错题重做模式，从云函数获取错题 ===')
+        try {
+          const wrongQuestions = await questionService.getWrongQuestions(1, count)
+          console.log('从云函数获取到错题:', wrongQuestions?.length || 0, '题')
+          if (wrongQuestions && wrongQuestions.length > 0) {
+            // 标准化错题数据格式
+            data = wrongQuestions.map(q => normalizeQuestion({
+              id: q.id || q._id,
+              type: q.type,
+              question: q.question || q.questionText,
+              options: q.options || [],
+              correctAnswer: q.answer || q.correctAnswer || 0,
+              explanation: q.explanation || ''
+            }))
+          } else {
+            // 没有错题，使用空数组
+            data = []
+          }
+        } catch (err) {
+          console.error('获取错题失败，使用空数组:', err)
+          data = []
+        }
+      } else if (mode === 'random') {
         // 随机模式：从所有题目中抽取
         const all = getAllQuestions()
         data = all.slice(0, Math.min(count, all.length))
@@ -447,9 +471,11 @@ function ExerciseDetail() {
         data = shuffled.slice(0, Math.min(count, shuffled.length))
       }
       // 标准化题目数据格式
-      data = data.map(normalizeQuestion)
-      console.log('成功加载题目，数量:', data.length, '模式:', mode, '类型:', type)
-      setQuestions(data)
+      if (data && data.length > 0 && mode !== 'wrong') {
+        data = data.map(normalizeQuestion)
+      }
+      console.log('成功加载题目，数量:', data?.length || 0, '模式:', mode, '类型:', type)
+      setQuestions(data || [])
     } catch (err) {
       console.error('加载题目失败:', err)
       // 最小fallback
@@ -464,6 +490,17 @@ function ExerciseDetail() {
   }
 
   const currentQuestion = questions[currentIndex]
+
+  // 调试：打印当前题目信息
+  if (currentQuestion && mode === 'wrong') {
+    console.log('=== 当前错题信息 ===')
+    console.log('题目ID:', currentQuestion.id)
+    console.log('题目类型:', currentQuestion.type)
+    console.log('题目内容:', currentQuestion.question?.substring(0, 50))
+    console.log('选项数量:', currentQuestion.options?.length || 0)
+    console.log('选项示例:', currentQuestion.options?.[0])
+    console.log('完整题目数据:', currentQuestion)
+  }
 
   const handleAnswer = (value) => {
     console.log('handleAnswer 被调用', { questionId: currentQuestion.id, value })
@@ -520,8 +557,10 @@ function ExerciseDetail() {
   }
 
   const handleSubmit = async () => {
-    // 计算分数
+    // 计算分数并记录答对的题目
     let correct = 0
+    const correctQuestionIds = [] // 记录答对的题目ID
+
     questions.forEach(q => {
       const userAnswer = answers[q.id]
       const correctAnswer = q.correctAnswer
@@ -542,6 +581,7 @@ function ExerciseDetail() {
 
       if (isAnswerCorrect) {
         correct++
+        correctQuestionIds.push(q.id)
       }
     })
     const finalScore = Math.round((correct / questions.length) * 100)
@@ -564,10 +604,37 @@ function ExerciseDetail() {
 
     // 批量写入答题记录到 answer_history（使用 question 云函数）
     try {
-      const answerData = questions.map(q => ({
-        questionId: q.id,
-        answer: answers[q.id]
-      }))
+      // 计算每道题是否正确
+      const answerData = questions.map(q => {
+        const userAnswer = answers[q.id]
+        const correctAnswer = q.correctAnswer
+
+        let isAnswerCorrect = false
+        if (Array.isArray(userAnswer)) {
+          const sortedUser = [...userAnswer].sort()
+          const sortedCorrect = Array.isArray(correctAnswer)
+            ? [...correctAnswer].sort()
+            : [correctAnswer]
+          isAnswerCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect)
+        } else {
+          isAnswerCorrect = userAnswer === correctAnswer
+        }
+
+        return {
+          questionId: q.id,
+          answer: answers[q.id],
+          questionType: q.type,
+          isCorrect: isAnswerCorrect,
+          // 包含完整题目信息，以便错题重做时使用
+          questionText: q.question || q.questionText || '',
+          options: q.options || [],
+          correctAnswer: correctAnswer
+        }
+      })
+
+      console.log('=== 提交答题数据 ===')
+      console.log('答题数据示例:', answerData[0])
+
       await Taro.cloud.callFunction({
         name: 'question',
         data: {
@@ -577,6 +644,39 @@ function ExerciseDetail() {
       })
     } catch (err) {
       console.error('记录答题历史失败:', err)
+    }
+
+    // 如果是错题重做模式，将答对的题目从错题集中移除
+    if (mode === 'wrong' && correctQuestionIds.length > 0) {
+      console.log('=== 错题重做模式，准备移除答对的题目 ===')
+      console.log('答对的题目ID:', correctQuestionIds)
+      console.log('当前 mode:', mode)
+
+      // 显示 Toast 提示
+      Taro.showToast({ title: `正在移除${correctQuestionIds.length}道错题...`, icon: 'loading', duration: 2000 })
+
+      try {
+        // 逐个移除答对的错题
+        for (const questionId of correctQuestionIds) {
+          console.log('正在移除错题:', questionId)
+          const res = await Taro.cloud.callFunction({
+            name: 'question',
+            data: {
+              action: 'removeWrong',
+              questionId: questionId
+            }
+          })
+          console.log('移除结果:', res)
+        }
+        console.log(`=== 成功移除 ${correctQuestionIds.length} 道错题 ===`)
+        Taro.showToast({ title: `已移除${correctQuestionIds.length}道错题`, icon: 'success', duration: 2000 })
+      } catch (err) {
+        console.error('=== 移除错题失败 ===:', err)
+        Taro.showToast({ title: '移除失败: ' + (err.errMsg || err.message || 'unknown'), icon: 'none', duration: 3000 })
+      }
+    } else {
+      console.log('=== 不是错题重做模式 或 没有答对的题目 ===')
+      console.log('mode:', mode, 'correctQuestionIds:', correctQuestionIds)
     }
   }
 

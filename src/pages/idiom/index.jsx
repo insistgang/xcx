@@ -175,9 +175,13 @@ function Idiom() {
   }
 
   const finishPractice = async () => {
+    console.log('=== finishPractice 被调用 (成语) ===')
+    console.log('questions 数量:', questions.length)
+    console.log('userAnswers.current:', JSON.stringify(userAnswers.current))
+
     setCompleted(true)
 
-    // 准备答题数据，包含 isCorrect 和 questionType
+    // 准备答题数据，包含完整题目信息
     const answerData = questions.map(q => {
       const userAnswer = userAnswers.current[q.id] ?? -1
       const isCorrect = userAnswer === q.correctAnswer
@@ -185,21 +189,34 @@ function Idiom() {
         questionId: q.id,
         answer: userAnswer,
         isCorrect,
-        questionType: 'idiom'
+        questionType: 'idiom',
+        // 包含完整题目信息，以便错题重做时使用
+        questionText: q.question || '',
+        options: q.options || [],
+        correctAnswer: q.correctAnswer
       }
     })
 
+    console.log('=== answerData 准备完成 (成语) ===')
+    console.log('answerData 数量:', answerData.length)
+
     // 1. 保存答题历史到 answer_history
     try {
-      await Taro.cloud.callFunction({
+      console.log('=== 开始调用 question 云函数 submitBatch (成语) ===')
+      const submitResult = await Taro.cloud.callFunction({
         name: 'question',
         data: {
           action: 'submitBatch',
           answers: answerData
         }
       })
+      console.log('=== question 云函数返回 (成语) ===')
+      console.log('result:', JSON.stringify(submitResult.result))
+      Taro.showToast({ title: '答题记录已保存', icon: 'success' })
     } catch (err) {
-      console.error('保存答题历史失败:', err)
+      console.error('=== question 云函数调用失败 (成语) ===')
+      console.error('错误:', err.errMsg || err.message)
+      Taro.showToast({ title: '保存失败: ' + (err.errMsg || err.message), icon: 'none', duration: 3000 })
     }
 
     // 2. 保存学习记录到 study_records
@@ -213,7 +230,6 @@ function Idiom() {
         duration: 5
       })
 
-      // 3. 触发统计更新事件（实现实时刷新）
       eventBus.emit(EVENTS.STUDY_RECORD_UPDATED, {
         type: 'idiom',
         score: Math.round((score / questions.length) * 100),

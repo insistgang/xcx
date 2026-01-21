@@ -117,7 +117,6 @@ function Exercise() {
             >
               <Text className="review-icon">❌</Text>
               <Text className="review-name">错题重做</Text>
-              <Text className="review-count">{wrongCount} 题</Text>
             </View>
             <View
               className="review-item review-favorite"

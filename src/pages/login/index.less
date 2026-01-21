@@ -104,6 +104,53 @@
   margin-top: 24px;
 }
 
+/* 协议复选框区域 */
+.agreement-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 24px;
+  padding: 16px 0;
+  cursor: pointer;
+}
+
+/* 自定义复选框 */
+.custom-checkbox {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  background: #fff;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.custom-checkbox.checked {
+  border-color: #4A90E2;
+  background: #4A90E2;
+}
+
+.checkbox-check {
+  color: #fff;
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.agreement-text {
+  font-size: 24px;
+  color: @text-color-secondary;
+  line-height: 1.5;
+}
+
+.agreement-link {
+  color: @primary-color;
+  margin: 0 4px;
+}
+
 .form-switch {
   text-align: center;
   margin-top: 32px;

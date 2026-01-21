@@ -2,7 +2,7 @@
  * 登录页面
  */
 import { useState } from 'react'
-import { View, Button, Input, Image } from '@tarojs/components'
+import { View, Button, Input, Image, Text } from '@tarojs/components'
 import Taro, { useLoad } from '@tarojs/taro'
 import { useAuth } from '../../context/AuthContext'
 import './index.less'
@@ -13,6 +13,7 @@ function Login() {
   const [nickname, setNickname] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreed, setAgreed] = useState(false) // 用户协议勾选状态
 
   useLoad(() => {
     // 如果已登录，跳转到首页（使用 switchTab 因为首页是 tabBar 页面）
@@ -25,6 +26,21 @@ function Login() {
    * 微信授权登录
    */
   const handleWechatLogin = async () => {
+    console.log('=== 点击登录按钮 ===')
+    console.log('agreed 状态:', agreed)
+
+    // 检查是否同意用户协议
+    if (!agreed) {
+      console.log('未勾选协议，阻止登录')
+      Taro.showToast({
+        title: '请先阅读并同意《用户协议》和《隐私政策》',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
+    console.log('已勾选协议，继续登录')
     try {
       setLoading(true)
       const result = await login()
@@ -64,9 +80,30 @@ function Login() {
   }
 
   /**
+   * 切换协议勾选状态
+   */
+  const toggleAgreement = () => {
+    const newValue = !agreed
+    console.log('=== 点击协议复选框 ===')
+    console.log('当前状态:', agreed)
+    console.log('将设置为:', newValue)
+    setAgreed(newValue)
+  }
+
+  /**
    * 完成注册（设置昵称）
    */
   const handleRegister = async () => {
+    // 检查是否同意用户协议
+    if (!agreed) {
+      Taro.showToast({
+        title: '请先阅读并同意《用户协议》和《隐私政策》',
+        icon: 'none',
+        duration: 2000
+      })
+      return
+    }
+
     if (!nickname.trim()) {
       Taro.showToast({ title: '请输入昵称', icon: 'none' })
       return
@@ -111,8 +148,19 @@ function Login() {
               微信授权登录
             </Button>
 
-            <View className="form-tips">
-              登录即表示同意《用户协议》和《隐私政策》
+            <View className="agreement-section" onClick={toggleAgreement}>
+              <View className={`custom-checkbox ${agreed ? 'checked' : ''}`}>
+                {agreed && <View className="checkbox-check">✓</View>}
+              </View>
+              <View className="agreement-text">
+                我已阅读并同意
+                <Text className="agreement-link">《用户协议》</Text>
+                和
+                <Text className="agreement-link">《隐私政策》</Text>
+                <Text style={{ marginLeft: '16px', color: agreed ? '#07C160' : '#999', fontSize: '20px' }}>
+                  ({agreed ? '已同意' : '未同意'})
+                </Text>
+              </View>
             </View>
           </>
         ) : (
@@ -153,6 +201,21 @@ function Login() {
             >
               完成注册
             </Button>
+
+            <View className="agreement-section" onClick={toggleAgreement}>
+              <View className={`custom-checkbox ${agreed ? 'checked' : ''}`}>
+                {agreed && <View className="checkbox-check">✓</View>}
+              </View>
+              <View className="agreement-text">
+                我已阅读并同意
+                <Text className="agreement-link">《用户协议》</Text>
+                和
+                <Text className="agreement-link">《隐私政策》</Text>
+                <Text style={{ marginLeft: '16px', color: agreed ? '#07C160' : '#999', fontSize: '20px' }}>
+                  ({agreed ? '已同意' : '未同意'})
+                </Text>
+              </View>
+            </View>
           </>
         )}
 

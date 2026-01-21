@@ -161,9 +161,13 @@ function Vocabulary() {
   }
 
   const finishPractice = async () => {
+    // 调试：显示明显的提示
+    Taro.showToast({ title: '1. finishPractice开始', icon: 'none', duration: 1000 })
+    await new Promise(r => setTimeout(r, 500))
+
     setCompleted(true)
 
-    // 准备答题数据，包含 isCorrect 和 questionType
+    // 准备答题数据，包含完整题目信息
     const answerData = questions.map(q => {
       const userAnswer = userAnswers.current[q.id] ?? -1
       const isCorrect = userAnswer === q.correctAnswer
@@ -171,21 +175,41 @@ function Vocabulary() {
         questionId: q.id,
         answer: userAnswer,
         isCorrect,
-        questionType: 'vocabulary'
+        questionType: 'vocabulary',
+        // 包含完整题目信息，以便错题重做时使用
+        questionText: q.question || '',
+        options: q.options || [],
+        correctAnswer: q.correctAnswer
       }
     })
 
+    Taro.showToast({ title: `2. 答题数据${answerData.length}条`, icon: 'none', duration: 1000 })
+    await new Promise(r => setTimeout(r, 500))
+
     // 1. 保存答题历史到 answer_history
     try {
-      await Taro.cloud.callFunction({
+      Taro.showToast({ title: '3. 调用云函数question', icon: 'loading', duration: 2000, mask: true })
+      const submitResult = await Taro.cloud.callFunction({
         name: 'question',
         data: {
           action: 'submitBatch',
           answers: answerData
         }
       })
+      console.log('=== 云函数返回完整数据 ===', JSON.stringify(submitResult))
+      // 兼容两种返回格式：扁平结构和嵌套 data 结构
+      const result = submitResult.result || submitResult || {}
+      console.log('=== result ===', JSON.stringify(result))
+      // 新格式：直接从 result 读取
+      // 旧格式：从 result.data 读取
+      const saved = result.savedCount ?? result.data?.savedCount ?? '?'
+      const version = result.version ?? result.data?.version ?? 'no-ver'
+      console.log('=== 解析结果 ===', { saved, version, total: answerData.length })
+      Taro.showToast({ title: `保存${saved}/${answerData.length}条 v:${version}`, icon: 'success', duration: 2000 })
     } catch (err) {
-      console.error('保存答题历史失败:', err)
+      console.error('=== 云函数调用失败 ===', err)
+      Taro.showToast({ title: 'ERROR: ' + (err.errMsg || err.message || 'unknown'), icon: 'none', duration: 5000 })
+      throw err
     }
 
     // 2. 保存学习记录到 study_records
@@ -199,7 +223,6 @@ function Vocabulary() {
         duration: 5
       })
 
-      // 3. 触发统计更新事件（实现实时刷新）
       eventBus.emit(EVENTS.STUDY_RECORD_UPDATED, {
         type: 'vocabulary',
         score: Math.round((score / questions.length) * 100),
@@ -207,7 +230,7 @@ function Vocabulary() {
         totalCount: questions.length
       })
     } catch (err) {
-      console.error('保存学习记录失败:', err)
+      Taro.showToast({ title: 'STUDY ERROR', icon: 'none', duration: 2000 })
     }
   }
 

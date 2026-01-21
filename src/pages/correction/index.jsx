@@ -165,9 +165,10 @@ function Correction() {
   }
 
   const finishPractice = async () => {
+    Taro.showToast({ title: '正在保存...', icon: 'loading', duration: 2000 })
     setCompleted(true)
 
-    // 准备答题数据，包含 isCorrect 和 questionType
+    // 准备答题数据，包含完整题目信息
     const answerData = questions.map(q => {
       const userAnswer = userAnswers.current[q.id] ?? -1
       const isCorrect = userAnswer === q.correctAnswer
@@ -175,21 +176,27 @@ function Correction() {
         questionId: q.id,
         answer: userAnswer,
         isCorrect,
-        questionType: 'correction'
+        questionType: 'correction',
+        // 包含完整题目信息，以便错题重做时使用
+        questionText: q.question || '',
+        options: q.options || [],
+        correctAnswer: q.correctAnswer
       }
     })
 
     // 1. 保存答题历史到 answer_history
     try {
-      await Taro.cloud.callFunction({
+      Taro.showToast({ title: '正在保存答题记录...', icon: 'loading', mask: true })
+      const submitResult = await Taro.cloud.callFunction({
         name: 'question',
         data: {
           action: 'submitBatch',
           answers: answerData
         }
       })
+      Taro.showToast({ title: '答题记录已保存', icon: 'success' })
     } catch (err) {
-      console.error('保存答题历史失败:', err)
+      Taro.showToast({ title: '保存失败: ' + (err.errMsg || err.message), icon: 'none', duration: 3000 })
     }
 
     // 2. 保存学习记录到 study_records

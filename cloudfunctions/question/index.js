@@ -10,7 +10,7 @@ const _ = db.command
 const QUESTIONS_COLLECTION = 'questions_bank'
 
 // Action 白名单
-const ALLOWED_ACTIONS = ['random', 'list', 'detail', 'submit', 'submitBatch', 'stats', 'types', 'favorite', 'favorites', 'wrong', 'practice', 'achievements']
+const ALLOWED_ACTIONS = ['random', 'list', 'detail', 'submit', 'submitBatch', 'stats', 'types', 'favorite', 'favorites', 'wrong', 'removeWrong', 'practice', 'achievements']
 
 exports.main = async (event, context) => {
   const { action, _openid, ...params } = event
@@ -57,6 +57,8 @@ exports.main = async (event, context) => {
       return await getFavorites(effectiveOpenid, params.page, params.pageSize)
     case 'wrong':
       return await getWrongQuestions(effectiveOpenid, params.page, params.pageSize)
+    case 'removeWrong':
+      return await removeWrongQuestion(effectiveOpenid, params.questionId)
     case 'practice':
       return await generatePractice(params.type, params.count, params.difficulty)
     case 'achievements':
@@ -252,37 +254,57 @@ async function submitAnswer(openid, questionId, answer) {
  * 此时 answers 数组应包含 isCorrect 和 questionType 字段。
  */
 async function submitBatchAnswers(openid, answers) {
-  console.log('=== submitBatchAnswers 被调用 ===')
+  console.log('===== submitBatchAnswers v2025-01-15-DEBUG =====')
   console.log('openid:', openid)
-  console.log('answers 数量:', answers.length)
+  console.log('answers 数量:', answers?.length)
+  console.log('answers 示例:', JSON.stringify(answers?.[0]))
+
+  if (!answers || !Array.isArray(answers) || answers.length === 0) {
+    console.error('answers 参数无效:', answers)
+    return {
+      success: false,
+      savedCount: 0,
+      total: 0,
+      version: 'v2025-01-15-EMPTY',
+      message: '答案数据为空或格式错误'
+    }
+  }
 
   try {
     const results = []
     let correctCount = 0
+    let savedCount = 0
+    const errors = []
 
-    for (const item of answers) {
+    for (let i = 0; i < answers.length; i++) {
+      const item = answers[i]
+      console.log(`[${i+1}/${answers.length}] 处理题目:`, item.questionId, '答案:', item.answer)
+
       // 先尝试从数据库获取题目
-      const questionRes = await db.collection(QUESTIONS_COLLECTION).doc(item.questionId).get()
-      const question = questionRes.data
+      let question = null
+      try {
+        const questionRes = await db.collection(QUESTIONS_COLLECTION).doc(item.questionId).get()
+        question = questionRes.data
+      } catch (e) {
+        console.log('题目不在题库中:', item.questionId)
+      }
 
       let isCorrect
       let questionType
 
       if (question) {
-        // 题目在数据库中，使用数据库的数据
         isCorrect = String(item.answer) === String(question.correctAnswer)
         questionType = question.type
       } else {
-        // 题目不在数据库中（如练习页面的题目），使用传入的数据
         isCorrect = item.isCorrect ?? false
         questionType = item.questionType ?? 'practice'
       }
 
       if (isCorrect) correctCount++
 
-      // 无论题目是否在数据库中，都保存答题历史
-      await db.collection('answer_history').add({
-        data: {
+      // 保存答题历史到 answer_history（包含完整题目信息）
+      try {
+        const recordData = {
           _openid: openid,
           questionId: item.questionId,
           answer: item.answer,
@@ -290,7 +312,27 @@ async function submitBatchAnswers(openid, answers) {
           questionType,
           createdAt: db.serverDate()
         }
-      })
+
+        // 如果有完整的题目信息，一并保存
+        if (item.questionText) {
+          recordData.questionText = item.questionText
+        }
+        if (item.options && item.options.length > 0) {
+          recordData.options = item.options
+        }
+        if (item.correctAnswer !== undefined) {
+          recordData.correctAnswer = item.correctAnswer
+        }
+
+        const addResult = await db.collection('answer_history').add({
+          data: recordData
+        })
+        console.log(`[${i+1}] 保存成功 _id:`, addResult._id)
+        savedCount++
+      } catch (saveErr) {
+        console.error(`[${i+1}] 保存失败:`, saveErr)
+        errors.push({ index: i, error: saveErr.message })
+      }
 
       results.push({
         questionId: item.questionId,
@@ -300,20 +342,35 @@ async function submitBatchAnswers(openid, answers) {
       })
     }
 
-    console.log('submitBatch 完成: 保存了', answers.length, '条答题记录到 answer_history')
+    console.log('===== submitBatch 完成 =====')
+    console.log('尝试保存:', answers.length, '实际保存:', savedCount, '正确:', correctCount)
 
+    // 直接返回扁平结构，兼容前端读取
     return {
       success: true,
-      data: {
+      savedCount: savedCount,
+      total: answers.length,
+      correctCount: correctCount,
+      score: answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0,
+      version: 'v2025-01-15-NEW',
+      data: {  // 保持兼容性
         results,
+        savedCount,
         correctCount,
         totalCount: answers.length,
-        score: answers.length > 0 ? Math.round((correctCount / answers.length) * 100) : 0
+        version: 'v2025-01-15-NEW'
       }
     }
   } catch (err) {
-    console.error('submitBatch 出错:', err)
-    return { success: false, message: err.message }
+    console.error('===== submitBatch 异常 =====:', err)
+    return {
+      success: false,
+      savedCount: 0,
+      total: answers?.length || 0,
+      version: 'v2025-01-15-ERROR',
+      message: err.message,
+      error: String(err)
+    }
   }
 }
 
@@ -496,6 +553,9 @@ async function getFavorites(openid, page = 1, pageSize = 20) {
  * 获取错题集（包含完整题目详情）
  */
 async function getWrongQuestions(openid, page = 1, pageSize = 20) {
+  console.log('=== getWrongQuestions 开始 ===')
+  console.log('openid:', openid)
+
   try {
     const skip = (page - 1) * pageSize
     const wrongRes = await db.collection('answer_history')
@@ -505,31 +565,159 @@ async function getWrongQuestions(openid, page = 1, pageSize = 20) {
       .limit(pageSize)
       .get()
 
+    console.log('错题记录数:', wrongRes.data.length)
+
     // 获取题目详情，去重（同一错题只保留最新一次）
     const questionMap = new Map()
     for (const record of wrongRes.data) {
       if (!questionMap.has(record.questionId)) {
-        try {
-          const qRes = await db.collection(QUESTIONS_COLLECTION).doc(record.questionId).get()
-          if (qRes.data) {
-            questionMap.set(record.questionId, {
-              ...qRes.data,
-              _id: qRes.data._id || record.questionId,
-              id: qRes.data.id || record.questionId,
-              wrongAnswer: record.answer,
-              wrongAt: record.createdAt
-            })
+        const questionType = record.questionType || record.type || 'unknown'
+        console.log('处理错题:', record.questionId, '类型:', questionType)
+
+        let questionData = null
+        let useSavedData = false
+
+        // 优先检查 answer_history 记录中是否已保存完整题目信息
+        // (这是 submitBatchAnswers 在保存时写入的 questionText, options, correctAnswer)
+        if (record.questionText || (record.options && record.options.length > 0)) {
+          console.log('使用 answer_history 中保存的题目数据')
+          useSavedData = true
+          questionData = {
+            id: record.questionId,
+            type: questionType,
+            question: record.questionText || record.question || `【${questionType}】题目 ID: ${record.questionId}`,
+            questionText: record.questionText || record.question || '',
+            options: record.options || [],
+            correctAnswer: record.correctAnswer !== undefined ? record.correctAnswer : 0,
+            answer: record.correctAnswer !== undefined ? record.correctAnswer : 0,
+            explanation: record.explanation || ''
           }
-        } catch (e) {
-          // 题目可能不存在，跳过
-          console.log('题目不存在:', record.questionId)
+          console.log('已保存数据 - options数量:', questionData.options.length)
+        }
+
+        // 如果记录中没有保存完整数据，尝试从 questions_bank 获取
+        if (!questionData) {
+          try {
+            const qRes = await db.collection(QUESTIONS_COLLECTION).doc(record.questionId).get()
+            if (qRes.data) {
+              questionData = qRes.data
+              console.log('从 questions_bank 找到题目')
+            }
+          } catch (e) {
+            console.log('questions_bank 中没有该题目')
+          }
+        }
+
+        if (questionData) {
+          // 找到完整题目信息
+          questionMap.set(record.questionId, {
+            id: questionData.id || record.questionId,
+            _id: questionData._id || record.questionId,
+            type: questionType,
+            question: questionData.question || questionData.content || '',
+            questionText: questionData.question || questionData.content || '',
+            options: questionData.options || [],
+            correctAnswer: questionData.answer || questionData.correctAnswer || 0,
+            answer: questionData.answer || questionData.correctAnswer || 0,
+            explanation: questionData.explanation || '',
+            wrongAnswer: record.answer,
+            wrongAt: record.createdAt,
+            isFromSavedData: useSavedData
+          })
+        } else {
+          // 没有找到完整题目信息，使用基本记录
+          console.log('未找到完整题目信息，使用基本记录')
+          questionMap.set(record.questionId, {
+            id: record.questionId,
+            _id: record.questionId,
+            type: questionType,
+            question: `【${questionType}】题目 ID: ${record.questionId}`,
+            questionText: `题目 ID: ${record.questionId}`,
+            options: [],
+            correctAnswer: 0,
+            answer: 0,
+            wrongAnswer: record.answer,
+            wrongAt: record.createdAt,
+            isFromHistory: true
+          })
         }
       }
     }
 
+    console.log('最终返回错题数:', questionMap.size)
     return { success: true, data: Array.from(questionMap.values()) }
   } catch (err) {
+    console.error('getWrongQuestions 出错:', err)
     return { success: false, message: err.message, data: [] }
+  }
+}
+
+/**
+ * 移除错题（答对后调用）
+ * 删除该用户对该题目的错题记录
+ * @param {string} openid - 用户openid
+ * @param {string} questionId - 题目ID
+ */
+async function removeWrongQuestion(openid, questionId) {
+  console.log('===== removeWrongQuestion 开始 =====')
+  console.log('openid:', openid)
+  console.log('questionId:', questionId)
+
+  if (!questionId) {
+    console.log('错误: 缺少questionId参数')
+    return { success: false, message: '缺少questionId参数' }
+  }
+
+  try {
+    // 先检查有多少条错题记录
+    const checkBefore = await db.collection('answer_history')
+      .where({
+        _openid: openid,
+        questionId: questionId,
+        isCorrect: false
+      })
+      .count()
+    console.log('删除前错题记录数:', checkBefore.total)
+
+    // 删除该用户对这道题目的错题记录（isCorrect: false 的记录）
+    const deleteRes = await db.collection('answer_history')
+      .where({
+        _openid: openid,
+        questionId: questionId,
+        isCorrect: false
+      })
+      .remove()
+
+    console.log('删除错题记录结果:', JSON.stringify(deleteRes))
+    console.log('实际删除数量:', deleteRes.stats?.removed || 0)
+
+    // 检查是否还有该题目的错题记录
+    const checkAfter = await db.collection('answer_history')
+      .where({
+        _openid: openid,
+        questionId: questionId,
+        isCorrect: false
+      })
+      .count()
+
+    const remaining = checkAfter.total
+    console.log('删除后剩余错题记录数:', remaining)
+
+    console.log('===== removeWrongQuestion 完成 =====')
+    return {
+      success: true,
+      removed: deleteRes.stats?.removed || 0,
+      remaining,
+      message: remaining === 0 ? '错题已移除' : `还有${remaining}条记录`
+    }
+  } catch (err) {
+    console.error('===== removeWrongQuestion 出错 =====:', err)
+    return {
+      success: false,
+      message: err.message,
+      removed: 0,
+      error: String(err)
+    }
   }
 }
 
