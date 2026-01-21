@@ -20,6 +20,8 @@ export default {
     'pages/wrong-practice/index',
     'pages/favorite-practice/index',
     'pages/profile/index',
+    'pages/admin/index',
+    'pages/admin/user-detail/index',
     'pages/admin-import/index'
   ],
 

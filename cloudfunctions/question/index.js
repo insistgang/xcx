@@ -10,7 +10,11 @@ const _ = db.command
 const QUESTIONS_COLLECTION = 'questions_bank'
 
 // Action 白名单
-const ALLOWED_ACTIONS = ['random', 'list', 'detail', 'submit', 'submitBatch', 'stats', 'types', 'favorite', 'favorites', 'wrong', 'removeWrong', 'practice', 'achievements']
+const ALLOWED_ACTIONS = [
+  'random', 'list', 'detail', 'submit', 'submitBatch', 'stats', 'types',
+  'favorite', 'favorites', 'wrong', 'removeWrong', 'practice', 'achievements',
+  'adminCheck', 'adminStats', 'adminUserList', 'adminUserDetail'
+]
 
 exports.main = async (event, context) => {
   const { action, _openid, ...params } = event
@@ -63,6 +67,15 @@ exports.main = async (event, context) => {
       return await generatePractice(params.type, params.count, params.difficulty)
     case 'achievements':
       return await getAchievements(effectiveOpenid)
+    // 管理员接口
+    case 'adminCheck':
+      return await checkAdmin(effectiveOpenid)
+    case 'adminStats':
+      return await getAdminStats(effectiveOpenid)
+    case 'adminUserList':
+      return await getAdminUserList(effectiveOpenid, params.page, params.pageSize)
+    case 'adminUserDetail':
+      return await getAdminUserDetail(effectiveOpenid, params.targetOpenid)
     default:
       return { success: false, message: '未知操作' }
   }
@@ -906,4 +919,373 @@ function calculateStudyDays(records) {
   }
 
   return streak
+}
+
+// ==================== 管理员功能 ====================
+
+/**
+ * 检查用户是否是管理员
+ * @param {string} openid - 用户 openid
+ * @returns {Object} { success: true, isAdmin: boolean }
+ */
+async function checkAdmin(openid) {
+  try {
+    const result = await db.collection('admins')
+      .where({ _openid: openid })
+      .get()
+
+    const isAdmin = result.data.length > 0
+    console.log('checkAdmin:', openid, isAdmin)
+
+    return { success: true, isAdmin }
+  } catch (err) {
+    console.error('checkAdmin error:', err)
+    return { success: false, message: err.message, isAdmin: false }
+  }
+}
+
+/**
+ * 验证管理员权限（内部函数）
+ * @param {string} openid - 用户 openid
+ * @returns {boolean} 是否是管理员
+ */
+async function isAdmin(openid) {
+  const result = await checkAdmin(openid)
+  return result.isAdmin === true
+}
+
+/**
+ * 获取管理员统计数据
+ * @param {string} openid - 用户 openid
+ * @returns {Object} 统计数据
+ */
+async function getAdminStats(openid) {
+  // 验证管理员权限
+  if (!await isAdmin(openid)) {
+    return { success: false, message: '无管理员权限' }
+  }
+
+  try {
+    console.log('=== getAdminStats 开始 ===')
+
+    // 1. 用户总数
+    const usersRes = await db.collection('users').count()
+    const totalUsers = usersRes.total
+
+    // 2. 今日新增用户
+    const today = new Date()
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0)
+    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+
+    const newUsersRes = await db.collection('users')
+      .where({
+        createdAt: _.gte(todayStart).and(_.lte(todayEnd))
+      })
+      .count()
+    const todayNewUsers = newUsersRes.total
+
+    // 3. 总答题数
+    const answerRes = await db.collection('answer_history').count()
+    const totalAnswers = answerRes.total
+
+    // 4. 正确答题数
+    const correctRes = await db.collection('answer_history')
+      .where({ isCorrect: true })
+      .count()
+    const correctAnswers = correctRes.total
+
+    // 5. 平均正确率
+    const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0
+
+    // 6. 各题型练习分布（使用简单查询替代聚合）
+    const recordsRes = await db.collection('study_records')
+      .limit(1000)
+      .get()
+
+    const typeDistribution = {}
+    const TYPE_NAMES = {
+      'pinyin': '拼音练习',
+      'idiom': '成语熟语',
+      'vocabulary': '词汇学习',
+      'correction': '病句修改',
+      'literature': '诗词鉴赏',
+      'grammar': '语法知识',
+      'reading': '阅读理解'
+    }
+
+    // 在代码中统计各题型数量
+    recordsRes.data.forEach(record => {
+      const type = record.type || 'unknown'
+      const typeName = TYPE_NAMES[type] || type
+      typeDistribution[typeName] = (typeDistribution[typeName] || 0) + 1
+    })
+
+    // 7. 收藏题目总数
+    const favoritesRes = await db.collection('favorites').count()
+    const totalFavorites = favoritesRes.total
+
+    // 8. 错题总数
+    const wrongRes = await db.collection('answer_history')
+      .where({ isCorrect: false })
+      .count()
+    const totalWrong = wrongRes.total
+
+    return {
+      success: true,
+      data: {
+        users: {
+          total: totalUsers,
+          todayNew: todayNewUsers
+        },
+        answers: {
+          total: totalAnswers,
+          correct: correctAnswers,
+          accuracy: accuracy
+        },
+        typeDistribution,
+        favorites: totalFavorites,
+        wrongQuestions: totalWrong
+      }
+    }
+  } catch (err) {
+    console.error('getAdminStats error:', err)
+    return { success: false, message: err.message }
+  }
+}
+
+/**
+ * 获取用户列表
+ * @param {string} openid - 管理员 openid
+ * @param {number} page - 页码
+ * @param {number} pageSize - 每页数量
+ * @returns {Object} 用户列表
+ */
+async function getAdminUserList(openid, page = 1, pageSize = 20) {
+  // 验证管理员权限
+  if (!await isAdmin(openid)) {
+    return { success: false, message: '无管理员权限' }
+  }
+
+  try {
+    console.log('=== getAdminUserList 开始 ===', page, pageSize)
+
+    const skip = (page - 1) * pageSize
+
+    // 获取用户列表（users集合使用openid字段，不是_openid）
+    const usersRes = await db.collection('users')
+      .orderBy('createdAt', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get()
+
+    // 获取总数
+    const countRes = await db.collection('users').count()
+    const total = countRes.total
+
+    console.log('用户总数:', total)
+    console.log('查询到的用户数:', usersRes.data.length)
+    console.log('第一个用户示例:', usersRes.data[0])
+
+    // 为每个用户获取统计数据
+    const userList = await Promise.all(usersRes.data.map(async (user) => {
+      const userOpenid = user.openid  // users集合使用openid字段
+
+      // 答题数
+      const answerRes = await db.collection('answer_history')
+        .where({ _openid: userOpenid })
+        .count()
+      const answerCount = answerRes.total
+
+      // 正确数
+      const correctRes = await db.collection('answer_history')
+        .where({ _openid: userOpenid, isCorrect: true })
+        .count()
+      const correctCount = correctRes.total
+
+      // 正确率
+      const accuracy = answerCount > 0 ? Math.round((correctCount / answerCount) * 100) : 0
+
+      // 学习记录数
+      const recordsRes = await db.collection('study_records')
+        .where({ _openid: userOpenid })
+        .count()
+      const studyDays = recordsRes.total
+
+      // 最后学习时间
+      const lastRecordRes = await db.collection('study_records')
+        .where({ _openid: userOpenid })
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+      const lastStudyTime = lastRecordRes.data.length > 0
+        ? lastRecordRes.data[0].createdAt
+        : null
+
+      return {
+        openid: userOpenid,
+        nickName: user.nickname || '未设置',  // users集合使用nickname字段
+        avatarUrl: user.avatar || '',
+        createdAt: user.createdAt,
+        stats: {
+          answerCount,
+          correctCount,
+          accuracy,
+          studyDays,
+          lastStudyTime
+        }
+      }
+    }))
+
+    console.log('处理后的用户列表:', userList.length)
+
+    return {
+      success: true,
+      data: {
+        list: userList,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    }
+  } catch (err) {
+    console.error('getAdminUserList error:', err)
+    return { success: false, message: err.message }
+  }
+}
+
+/**
+ * 获取单个用户详情
+ * @param {string} adminOpenid - 管理员 openid
+ * @param {string} targetOpenid - 目标用户 openid
+ * @returns {Object} 用户详情
+ */
+async function getAdminUserDetail(adminOpenid, targetOpenid) {
+  // 验证管理员权限
+  if (!await isAdmin(adminOpenid)) {
+    return { success: false, message: '无管理员权限' }
+  }
+
+  if (!targetOpenid) {
+    return { success: false, message: '缺少目标用户ID' }
+  }
+
+  try {
+    console.log('=== getAdminUserDetail 开始 ===', targetOpenid)
+
+    // 获取用户基本信息（users集合使用openid字段，不是_openid）
+    const userRes = await db.collection('users')
+      .where({ openid: targetOpenid })
+      .get()
+
+    if (userRes.data.length === 0) {
+      return { success: false, message: '用户不存在' }
+    }
+
+    const user = userRes.data[0]
+
+    // 获取答题历史
+    const answerRes = await db.collection('answer_history')
+      .where({ _openid: targetOpenid })
+      .orderBy('createdAt', 'desc')
+      .limit(100)
+      .get()
+
+    // 答题统计
+    const answerCount = answerRes.data.length
+    const correctCount = answerRes.data.filter(a => a.isCorrect).length
+    const accuracy = answerCount > 0 ? Math.round((correctCount / answerCount) * 100) : 0
+
+    // 各题型统计
+    const typeStats = {}
+    answerRes.data.forEach(answer => {
+      const type = answer.questionType || 'unknown'
+      if (!typeStats[type]) {
+        typeStats[type] = { total: 0, correct: 0 }
+      }
+      typeStats[type].total++
+      if (answer.isCorrect) {
+        typeStats[type].correct++
+      }
+    })
+
+    // 获取学习记录
+    const recordsRes = await db.collection('study_records')
+      .where({ _openid: targetOpenid })
+      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .get()
+
+    // 计算学习天数
+    const studyDays = calculateStudyDays(recordsRes.data)
+
+    // 获取收藏数
+    const favoritesRes = await db.collection('favorites')
+      .where({ _openid: targetOpenid })
+      .count()
+    const favoriteCount = favoritesRes.total
+
+    // 获取错题数
+    const wrongRes = await db.collection('answer_history')
+      .where({ _openid: targetOpenid, isCorrect: false })
+      .count()
+    const wrongCount = wrongRes.total
+
+    // 最近30天答题趋势
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const trendRes = await db.collection('answer_history')
+      .where({
+        _openid: targetOpenid,
+        createdAt: _.gte(thirtyDaysAgo)
+      })
+      .get()
+
+    // 按日期分组统计
+    const dailyTrend = {}
+    trendRes.data.forEach(item => {
+      const date = new Date(item.createdAt)
+      const dateStr = `${date.getMonth() + 1}/${date.getDate()}`
+      if (!dailyTrend[dateStr]) {
+        dailyTrend[dateStr] = { total: 0, correct: 0 }
+      }
+      dailyTrend[dateStr].total++
+      if (item.isCorrect) {
+        dailyTrend[dateStr].correct++
+      }
+    })
+
+    return {
+      success: true,
+      data: {
+        userInfo: {
+          openid: targetOpenid,
+          nickName: user.nickname || '未设置',  // users集合使用nickname字段
+          avatarUrl: user.avatar || '',
+          createdAt: user.createdAt
+        },
+        stats: {
+          answerCount,
+          correctCount,
+          accuracy,
+          studyDays,
+          favoriteCount,
+          wrongCount
+        },
+        typeStats,
+        studyRecords: recordsRes.data.map(r => ({
+          type: r.type,
+          score: r.score,
+          totalQuestions: r.totalQuestions,
+          correctAnswers: r.correctAnswers,
+          createdAt: r.createdAt
+        })),
+        dailyTrend
+      }
+    }
+  } catch (err) {
+    console.error('getAdminUserDetail error:', err)
+    return { success: false, message: err.message }
+  }
 }

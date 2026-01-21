@@ -6,6 +6,7 @@ import { View, Text, ScrollView, Image } from '@tarojs/components'
 import { useDidShow, navigateTo } from '@tarojs/taro'
 import { useAuth } from '../../context/AuthContext'
 import studyService from '../../services/study'
+import adminService from '../../services/admin'
 import eventBus, { EVENTS } from '../../utils/eventBus'
 import './index.less'
 
@@ -18,6 +19,7 @@ function Profile() {
     correctRate: 0
   })
   const [achievements, setAchievements] = useState({})
+  const [isAdmin, setIsAdmin] = useState(false)
 
   // 成就配置（元数据）
   const ACHIEVEMENT_CONFIG = {
@@ -36,6 +38,10 @@ function Profile() {
 
   useDidShow(async () => {
     await loadStatistics()
+    // 检查管理员权限
+    const adminStatus = await adminService.checkAdmin()
+    setIsAdmin(adminStatus)
+    console.log('管理员状态:', adminStatus)
   })
 
   // 监听学习记录更新事件（实现实时统计刷新）
@@ -83,7 +89,8 @@ function Profile() {
     })
   }
 
-  const menuItems = [
+  // 基础菜单项
+  const baseMenuItems = [
     {
       id: 'record',
       title: '学习记录',
@@ -101,14 +108,29 @@ function Profile() {
       title: '学习分析',
       icon: '📈',
       url: '/pages/study-analysis/index'
-    },
-    {
-      id: 'settings',
-      title: '设置',
-      icon: '⚙️',
-      action: 'settings'
     }
   ]
+
+  // 管理员菜单项
+  const adminMenuItem = {
+    id: 'admin',
+    title: '管理后台',
+    icon: '🔐',
+    url: '/pages/admin/index'
+  }
+
+  // 设置菜单项
+  const settingsMenuItem = {
+    id: 'settings',
+    title: '设置',
+    icon: '⚙️',
+    action: 'settings'
+  }
+
+  // 动态菜单项（根据管理员状态）
+  const menuItems = isAdmin
+    ? [...baseMenuItems, adminMenuItem, settingsMenuItem]
+    : [...baseMenuItems, settingsMenuItem]
 
   const handleMenuClick = (item) => {
     if (item.url) {
