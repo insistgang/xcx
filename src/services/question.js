@@ -744,15 +744,33 @@ class QuestionService {
 
   /**
    * 收藏题目
+   * @param {string} questionId - 题目 ID
+   * @param {object} questionData - 题目完整数据（可选）
    */
-  async toggleFavorite(questionId) {
+  async toggleFavorite(questionId, questionData = null) {
+    console.log('=== questionService.toggleFavorite ===')
+    console.log('questionId:', questionId)
+    console.log('questionData:', questionData)
+
     try {
-      const res = await callCloudFunction(CLOUD_FUNCTIONS.QUESTION, {
+      const payload = {
         action: 'favorite',
         questionId
-      })
+      }
+      // 如果提供了完整题目数据，一并发送
+      if (questionData) {
+        payload.questionData = questionData
+      }
+
+      console.log('=== 发送到云函数的 payload ===', payload)
+
+      const res = await callCloudFunction(CLOUD_FUNCTIONS.QUESTION, payload)
+
+      console.log('=== 云函数返回结果 ===', res)
+
       return res.success
     } catch (err) {
+      console.error('=== toggleFavorite 错误 ===', err)
       Taro.showToast({ title: '收藏失败', icon: 'none' })
       return false
     }

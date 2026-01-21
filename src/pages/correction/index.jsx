@@ -1,13 +1,17 @@
 /**
  * 病句修改页面 - 选择题模式
  */
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { useDidShow } from '@tarojs/taro'
 import studyService from '../../services/study'
+import questionService from '../../services/question'
 import eventBus, { EVENTS } from '../../utils/eventBus'
 import './index.less'
+
+// 收藏状态缓存
+let FAVORITES_CACHE = new Set()
 
 // 病句修改选择题库
 const CORRECTION_QUESTIONS = [
@@ -121,12 +125,84 @@ function Correction() {
   const [showResult, setShowResult] = useState(false)
   const [score, setScore] = useState(0)
   const [completed, setCompleted] = useState(false)
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
   // 记录每道题的答案，用于保存到 answer_history
   const userAnswers = useRef({})
 
+  const currentQuestion = questions[currentIndex]
+
   useDidShow(() => {
     startPractice()
+    loadFavorites()
   })
+
+  /**
+   * 加载用户的收藏列表
+   */
+  const loadFavorites = async () => {
+    try {
+      const favorites = await questionService.getFavorites(1, 1000)
+      FAVORITES_CACHE = new Set(favorites.map(f => f.id || f._id))
+      updateFavoriteStatus()
+    } catch (err) {
+      console.error('加载收藏失败:', err)
+    }
+  }
+
+  /**
+   * 更新当前题目的收藏状态
+   */
+  const updateFavoriteStatus = () => {
+    if (currentQuestion) {
+      setIsFavorited(FAVORITES_CACHE.has(currentQuestion.id))
+    }
+  }
+
+  /**
+   * 切换收藏状态
+   */
+  const handleToggleFavorite = async () => {
+    if (!currentQuestion || favoriteLoading) return
+
+    setFavoriteLoading(true)
+    try {
+      // 传递完整的题目数据
+      const questionData = {
+        id: currentQuestion.id,
+        type: currentQuestion.type || 'correction',
+        question: currentQuestion.question,
+        options: currentQuestion.options,
+        correctAnswer: currentQuestion.correctAnswer,
+        explanation: currentQuestion.explanation || ''
+      }
+
+      const success = await questionService.toggleFavorite(currentQuestion.id, questionData)
+      if (success) {
+        if (isFavorited) {
+          FAVORITES_CACHE.delete(currentQuestion.id)
+        } else {
+          FAVORITES_CACHE.add(currentQuestion.id)
+        }
+        setIsFavorited(!isFavorited)
+        Taro.showToast({
+          title: isFavorited ? '已取消收藏' : '已收藏',
+          icon: isFavorited ? 'none' : 'success',
+          duration: 1500
+        })
+      }
+    } catch (err) {
+      console.error('收藏失败:', err)
+      Taro.showToast({ title: '操作失败', icon: 'none' })
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
+
+  // 题目变化时更新收藏状态
+  useEffect(() => {
+    updateFavoriteStatus()
+  }, [currentIndex, questions])
 
   const startPractice = () => {
     // 随机打乱题目，取10道
@@ -219,8 +295,6 @@ function Correction() {
     }
   }
 
-  const currentQuestion = questions[currentIndex]
-
   if (questions.length === 0) {
     return <View className="correction-page"><Text>加载中...</Text></View>
   }
@@ -262,6 +336,12 @@ function Correction() {
           <View className="question-header">
             <Text className="question-num">第 {currentIndex + 1} / {questions.length} 题</Text>
             <View className="question-tag">病句修改</View>
+            <View
+              className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
+              onClick={handleToggleFavorite}
+            >
+              <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
+            </View>
           </View>
 
           <View className="question-content">

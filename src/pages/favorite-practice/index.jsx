@@ -4,8 +4,13 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import { useDidShow, navigateTo } from '@tarojs/taro'
+import Taro from '@tarojs/taro'
 import questionService from '../../services/question'
+import eventBus, { EVENTS } from '../../utils/eventBus'
 import './index.less'
+
+// 本地缓存：记录用户已经练习过的收藏题目 ID
+let PRACTICED_FAVORITES_CACHE = new Set()
 
 function FavoritePractice() {
   const [questions, setQuestions] = useState([])
@@ -17,22 +22,65 @@ function FavoritePractice() {
 
   useDidShow(() => {
     loadFavoriteQuestions()
+    // 监听练习完成事件
+    eventBus.on(EVENTS.STUDY_RECORD_UPDATED, handleStudyRecordUpdated)
+    return () => {
+      eventBus.off(EVENTS.STUDY_RECORD_UPDATED, handleStudyRecordUpdated)
+    }
   })
+
+  /**
+   * 当练习记录更新时，刷新已练习计数
+   */
+  const handleStudyRecordUpdated = (data) => {
+    console.log('=== 收到练习记录更新事件 ===', data)
+    // 重新加载收藏列表来更新计数
+    loadFavoriteQuestions()
+  }
+
+  /**
+   * 获取用户在 answer_history 中的记录
+   */
+  const loadPracticedCount = async (favoriteIds) => {
+    if (favoriteIds.length === 0) return 0
+
+    try {
+      const db = Taro.cloud.database()
+      const { data: answerRecords } = await db.collection('answer_history')
+        .where({
+          questionId: db.RegExp.create(`^(${favoriteIds.join('|')})$`)
+        })
+        .get()
+
+      // 获取唯一练习过的题目ID
+      const practicedIds = new Set(answerRecords.map(r => r.questionId))
+      PRACTICED_FAVORITES_CACHE = practicedIds
+
+      console.log('=== 已练习的收藏题目 ===', practicedIds)
+      return practicedIds.size
+    } catch (err) {
+      console.error('获取已练习记录失败:', err)
+      return 0
+    }
+  }
 
   const loadFavoriteQuestions = async () => {
     setLoading(true)
     try {
+      console.log('=== 开始获取收藏题目 ===')
       const data = await questionService.getFavorites(1, 100)
-      setQuestions(data || [])
+      console.log('=== getFavorites 返回数据 ===', data)
 
-      // 计算统计信息
-      const total = data?.length || 0
-      setStats({
-        total,
-        practiced: 0
-      })
+      const favoriteIds = (data || []).map(q => q.id || q._id)
+      const total = favoriteIds.length
+
+      // 获取已练习的题目数量
+      const practiced = await loadPracticedCount(favoriteIds)
+
+      setQuestions(data || [])
+      setStats({ total, practiced })
     } catch (err) {
-      console.error('加载收藏失败:', err)
+      console.error('=== 加载收藏失败 ===', err)
       setQuestions([])
     } finally {
       setLoading(false)
@@ -62,8 +110,17 @@ function FavoritePractice() {
   }
 
   const handleQuestionClick = (question) => {
+    // 将题目数据编码为 JSON 字符串传递
+    const questionData = encodeURIComponent(JSON.stringify({
+      id: question.id,
+      type: question.type,
+      question: question.question,
+      options: question.options,
+      correctAnswer: question.correctAnswer,
+      explanation: question.explanation || ''
+    }))
     navigateTo({
-      url: `/pages/exercise-detail/index?type=${question.type}&questionId=${question.id}`
+      url: `/pages/exercise-detail/index?mode=single&questionData=${questionData}`
     })
   }
 

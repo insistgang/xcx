@@ -2,13 +2,16 @@
  * 练习详情页面
  * 支持从题库中随机抽取题目，每次练习题目不同
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Radio, Checkbox } from '@tarojs/components'
 import Taro, { getCurrentInstance, navigateBack, useDidShow } from '@tarojs/taro'
 import questionService from '../../services/question'
 import studyService from '../../services/study'
 import { QUESTION_TYPES } from '../../utils/constants'
 import './index.less'
+
+// 收藏状态缓存（用于存储当前用户已收藏的题目ID）
+let FAVORITES_CACHE = new Set()
 
 // 题库数据缓存
 let ALL_QUESTIONS_CACHE = null
@@ -299,12 +302,84 @@ function ExerciseDetail() {
   const [score, setScore] = useState(0)
   const [loading, setLoading] = useState(true)
   const [startTime, setStartTime] = useState(Date.now())
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
 
   // 使用 useDidShow 确保题目在页面显示时加载
   useDidShow(() => {
     setStartTime(Date.now())
     loadQuestions()
+    loadFavorites()
   })
+
+  /**
+   * 加载用户的收藏列表（缓存到 FAVORITES_CACHE）
+   */
+  const loadFavorites = async () => {
+    try {
+      const favorites = await questionService.getFavorites(1, 1000)
+      FAVORITES_CACHE = new Set(favorites.map(f => f.id || f._id))
+      // 更新当前题目收藏状态
+      updateCurrentFavoriteStatus()
+    } catch (err) {
+      console.error('加载收藏列表失败:', err)
+    }
+  }
+
+  /**
+   * 更新当前题目的收藏状态
+   */
+  const updateCurrentFavoriteStatus = () => {
+    if (currentQuestion) {
+      const questionId = currentQuestion.id || currentQuestion._id
+      setIsFavorited(FAVORITES_CACHE.has(questionId))
+    }
+  }
+
+  /**
+   * 切换收藏状态
+   */
+  const handleToggleFavorite = async () => {
+    if (!currentQuestion || favoriteLoading) return
+
+    const questionId = currentQuestion.id || currentQuestion._id
+    setFavoriteLoading(true)
+
+    try {
+      // 传递完整的题目数据
+      const questionData = {
+        id: questionId,
+        type: currentQuestion.type || 'vocabulary',
+        question: currentQuestion.question || currentQuestion.questionText || '',
+        options: currentQuestion.options || [],
+        correctAnswer: currentQuestion.correctAnswer,
+        explanation: currentQuestion.explanation || ''
+      }
+
+      const success = await questionService.toggleFavorite(questionId, questionData)
+      if (success) {
+        // 更新缓存
+        if (isFavorited) {
+          FAVORITES_CACHE.delete(questionId)
+          Taro.showToast({ title: '已取消收藏', icon: 'none' })
+        } else {
+          FAVORITES_CACHE.add(questionId)
+          Taro.showToast({ title: '已收藏', icon: 'success' })
+        }
+        setIsFavorited(!isFavorited)
+      }
+    } catch (err) {
+      console.error('收藏操作失败:', err)
+      Taro.showToast({ title: '操作失败', icon: 'none' })
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
+
+  // 当前题目变化时更新收藏状态
+  useEffect(() => {
+    updateCurrentFavoriteStatus()
+  }, [currentIndex, questions])
 
   /**
    * 解析选项字符串为数组
@@ -435,7 +510,48 @@ function ExerciseDetail() {
 
     try {
       let data
-      if (mode === 'wrong') {
+      if (mode === 'single') {
+        // 单题模式：直接显示传入的题目
+        console.log('=== 单题模式 ===')
+        try {
+          const questionDataStr = params.questionData
+          if (questionDataStr) {
+            const parsedQuestion = JSON.parse(decodeURIComponent(questionDataStr))
+            console.log('解析到的题目:', parsedQuestion)
+            data = [normalizeQuestion(parsedQuestion)]
+          } else {
+            console.error('单题模式缺少 questionData 参数')
+            data = []
+          }
+        } catch (err) {
+          console.error('解析单题数据失败:', err)
+          data = []
+        }
+      } else if (mode === 'favorite') {
+        // 收藏练习模式：从云函数获取收藏的题目列表
+        console.log('=== 收藏练习模式，从云函数获取收藏题目 ===')
+        try {
+          const favoriteQuestions = await questionService.getFavorites(1, count)
+          console.log('从云函数获取到收藏题目:', favoriteQuestions?.length || 0, '题')
+          if (favoriteQuestions && favoriteQuestions.length > 0) {
+            // 标准化收藏题目数据格式
+            data = favoriteQuestions.map(q => normalizeQuestion({
+              id: q.id || q._id,
+              type: q.type || q.questionType || 'vocabulary',
+              question: q.question || q.questionText || '',
+              options: q.options || [],
+              correctAnswer: q.correctAnswer || 0,
+              explanation: q.explanation || ''
+            }))
+          } else {
+            // 没有收藏题目
+            data = []
+          }
+        } catch (err) {
+          console.error('获取收藏题目失败，使用空数组:', err)
+          data = []
+        }
+      } else if (mode === 'wrong') {
         // 错题重做模式：从云函数获取真实的错题列表
         console.log('=== 错题重做模式，从云函数获取错题 ===')
         try {
@@ -757,8 +873,16 @@ function ExerciseDetail() {
 
       <ScrollView scrollY className="content-scroll">
         <View className="question-card">
-          <View className="question-type">
-            {isMultipleChoice() ? '多选题' : '单选题'}
+          <View className="question-header">
+            <View className="question-type">
+              {isMultipleChoice() ? '多选题' : '单选题'}
+            </View>
+            <View
+              className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
+              onClick={handleToggleFavorite}
+            >
+              <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
+            </View>
           </View>
 
           <Text className="question-text">{currentQuestion?.question}</Text>

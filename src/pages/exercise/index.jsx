@@ -124,7 +124,6 @@ function Exercise() {
             >
               <Text className="review-icon">⭐</Text>
               <Text className="review-name">收藏练习</Text>
-              <Text className="review-count">{favoriteCount} 题</Text>
             </View>
           </View>
         </View>

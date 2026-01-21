@@ -52,7 +52,7 @@ exports.main = async (event, context) => {
     case 'types':
       return await getQuestionTypes()
     case 'favorite':
-      return await toggleFavorite(effectiveOpenid, params.questionId)
+      return await toggleFavorite(effectiveOpenid, params.questionId, params.questionData)
     case 'favorites':
       return await getFavorites(effectiveOpenid, params.page, params.pageSize)
     case 'wrong':
@@ -481,8 +481,15 @@ async function generatePractice(type = null, count = 10, difficulty = null) {
 
 /**
  * 收藏/取消收藏题目
+ * @param {string} openid - 用户 openid
+ * @param {string} questionId - 题目 ID
+ * @param {object} questionData - 题目完整数据（可选）
  */
-async function toggleFavorite(openid, questionId) {
+async function toggleFavorite(openid, questionId, questionData = null) {
+  console.log('=== toggleFavorite 开始 ===')
+  console.log('questionId:', questionId)
+  console.log('questionData:', questionData)
+
   try {
     const existingRes = await db.collection('favorites')
       .where({ _openid: openid, questionId })
@@ -493,19 +500,34 @@ async function toggleFavorite(openid, questionId) {
       await db.collection('favorites')
         .doc(existingRes.data[0]._id)
         .remove()
+      console.log('取消收藏成功')
       return { success: true, data: { favorited: false } }
     } else {
-      // 添加收藏
-      await db.collection('favorites').add({
-        data: {
-          _openid: openid,
-          questionId,
-          createdAt: db.serverDate()
-        }
-      })
+      // 添加收藏 - 保存完整的题目数据
+      const favoriteData = {
+        _openid: openid,
+        questionId,
+        createdAt: db.serverDate()
+      }
+
+      // 如果提供了完整题目数据，一并保存
+      if (questionData) {
+        favoriteData.questionText = questionData.question || questionData.questionText || ''
+        favoriteData.questionType = questionData.type || questionData.questionType || ''
+        favoriteData.options = questionData.options || []
+        favoriteData.correctAnswer = questionData.correctAnswer
+        favoriteData.explanation = questionData.explanation || ''
+        console.log('保存完整题目数据')
+      } else {
+        console.log('仅保存 questionId')
+      }
+
+      await db.collection('favorites').add({ data: favoriteData })
+      console.log('添加收藏成功')
       return { success: true, data: { favorited: true } }
     }
   } catch (err) {
+    console.error('toggleFavorite 错误:', err)
     return { success: false, message: err.message }
   }
 }
@@ -514,6 +536,10 @@ async function toggleFavorite(openid, questionId) {
  * 获取收藏列表（包含完整题目详情）
  */
 async function getFavorites(openid, page = 1, pageSize = 20) {
+  console.log('=== getFavorites 开始 ===')
+  console.log('openid:', openid)
+  console.log('page:', page, 'pageSize:', pageSize)
+
   try {
     const skip = (page - 1) * pageSize
     const favRes = await db.collection('favorites')
@@ -523,12 +549,18 @@ async function getFavorites(openid, page = 1, pageSize = 20) {
       .limit(pageSize)
       .get()
 
+    console.log('查询到收藏记录数:', favRes.data.length)
+    console.log('收藏记录示例:', favRes.data[0])
+
     // 获取题目详情
     const questions = []
     for (const fav of favRes.data) {
+      console.log('处理收藏记录:', fav.questionId)
+
       try {
         const qRes = await db.collection(QUESTIONS_COLLECTION).doc(fav.questionId).get()
         if (qRes.data) {
+          console.log('从 questions_bank 找到题目')
           questions.push({
             ...qRes.data,
             _id: qRes.data._id || fav.questionId,
@@ -536,15 +568,37 @@ async function getFavorites(openid, page = 1, pageSize = 20) {
             favoriteId: fav._id,
             favoriteCreatedAt: fav.createdAt
           })
+        } else {
+          throw new Error('题目不存在')
         }
       } catch (e) {
-        // 题目可能不存在，跳过
-        console.log('题目不存在:', fav.questionId)
+        // 题目在 questions_bank 中不存在，可能是内置题目（v001, i001 等）
+        console.log('questions_bank 中未找到题目，检查是否有保存的题目数据')
+
+        // 如果收藏记录中包含完整的题目数据，直接使用
+        if (fav.questionText || fav.question || fav.options) {
+          console.log('使用收藏记录中保存的题目数据')
+          questions.push({
+            id: fav.questionId,
+            type: fav.questionType || 'unknown',
+            question: fav.questionText || fav.question || '',
+            options: fav.options || [],
+            correctAnswer: fav.correctAnswer,
+            explanation: fav.explanation || '',
+            favoriteId: fav._id,
+            favoriteCreatedAt: fav.createdAt,
+            _id: fav.questionId
+          })
+        } else {
+          console.log('收藏记录中也没有题目数据，跳过:', fav.questionId)
+        }
       }
     }
 
+    console.log('最终返回题目数:', questions.length)
     return { success: true, data: questions }
   } catch (err) {
+    console.error('getFavorites 错误:', err)
     return { success: false, message: err.message, data: [] }
   }
 }

@@ -206,6 +206,37 @@
   font-size: @font-size-sm;
 }
 
+/* 收藏按钮 */
+.favorite-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: @bg-color;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.favorite-btn.loading {
+  opacity: 0.6;
+}
+
+.favorite-btn.favorited {
+  background: fade(#FFC107, 15%);
+}
+
+.favorite-icon {
+  font-size: 24px;
+  color: @text-color-placeholder;
+  line-height: 1;
+}
+
+.favorite-btn.favorited .favorite-icon {
+  color: #FFC107;
+}
+
 .question-content {
   margin-bottom: @spacing-xl;
 }
