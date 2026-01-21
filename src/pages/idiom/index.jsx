@@ -212,11 +212,10 @@ function Idiom() {
       })
       console.log('=== question 云函数返回 (成语) ===')
       console.log('result:', JSON.stringify(submitResult.result))
-      Taro.showToast({ title: '答题记录已保存', icon: 'success' })
     } catch (err) {
       console.error('=== question 云函数调用失败 (成语) ===')
       console.error('错误:', err.errMsg || err.message)
-      Taro.showToast({ title: '保存失败: ' + (err.errMsg || err.message), icon: 'none', duration: 3000 })
+      Taro.showToast({ title: '保存失败，请重试', icon: 'none', duration: 2000 })
     }
 
     // 2. 保存学习记录到 study_records

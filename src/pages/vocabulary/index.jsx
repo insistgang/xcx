@@ -161,10 +161,6 @@ function Vocabulary() {
   }
 
   const finishPractice = async () => {
-    // 调试：显示明显的提示
-    Taro.showToast({ title: '1. finishPractice开始', icon: 'none', duration: 1000 })
-    await new Promise(r => setTimeout(r, 500))
-
     setCompleted(true)
 
     // 准备答题数据，包含完整题目信息
@@ -183,12 +179,8 @@ function Vocabulary() {
       }
     })
 
-    Taro.showToast({ title: `2. 答题数据${answerData.length}条`, icon: 'none', duration: 1000 })
-    await new Promise(r => setTimeout(r, 500))
-
     // 1. 保存答题历史到 answer_history
     try {
-      Taro.showToast({ title: '3. 调用云函数question', icon: 'loading', duration: 2000, mask: true })
       const submitResult = await Taro.cloud.callFunction({
         name: 'question',
         data: {
@@ -205,10 +197,9 @@ function Vocabulary() {
       const saved = result.savedCount ?? result.data?.savedCount ?? '?'
       const version = result.version ?? result.data?.version ?? 'no-ver'
       console.log('=== 解析结果 ===', { saved, version, total: answerData.length })
-      Taro.showToast({ title: `保存${saved}/${answerData.length}条 v:${version}`, icon: 'success', duration: 2000 })
     } catch (err) {
       console.error('=== 云函数调用失败 ===', err)
-      Taro.showToast({ title: 'ERROR: ' + (err.errMsg || err.message || 'unknown'), icon: 'none', duration: 5000 })
+      Taro.showToast({ title: '保存失败，请重试', icon: 'none', duration: 2000 })
       throw err
     }
 
@@ -230,7 +221,7 @@ function Vocabulary() {
         totalCount: questions.length
       })
     } catch (err) {
-      Taro.showToast({ title: 'STUDY ERROR', icon: 'none', duration: 2000 })
+      console.error('保存学习记录失败:', err)
     }
   }
 

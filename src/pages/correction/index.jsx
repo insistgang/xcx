@@ -165,7 +165,6 @@ function Correction() {
   }
 
   const finishPractice = async () => {
-    Taro.showToast({ title: '正在保存...', icon: 'loading', duration: 2000 })
     setCompleted(true)
 
     // 准备答题数据，包含完整题目信息
@@ -186,17 +185,15 @@ function Correction() {
 
     // 1. 保存答题历史到 answer_history
     try {
-      Taro.showToast({ title: '正在保存答题记录...', icon: 'loading', mask: true })
-      const submitResult = await Taro.cloud.callFunction({
+      await Taro.cloud.callFunction({
         name: 'question',
         data: {
           action: 'submitBatch',
           answers: answerData
         }
       })
-      Taro.showToast({ title: '答题记录已保存', icon: 'success' })
     } catch (err) {
-      Taro.showToast({ title: '保存失败: ' + (err.errMsg || err.message), icon: 'none', duration: 3000 })
+      Taro.showToast({ title: '保存失败，请重试', icon: 'none', duration: 2000 })
     }
 
     // 2. 保存学习记录到 study_records

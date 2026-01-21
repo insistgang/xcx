@@ -4,7 +4,7 @@
  */
 import { useState } from 'react'
 import { View, Text, ScrollView, Radio, Checkbox } from '@tarojs/components'
-import { getCurrentInstance, navigateBack, useDidShow } from '@tarojs/taro'
+import Taro, { getCurrentInstance, navigateBack, useDidShow } from '@tarojs/taro'
 import questionService from '../../services/question'
 import studyService from '../../services/study'
 import { QUESTION_TYPES } from '../../utils/constants'
@@ -652,9 +652,6 @@ function ExerciseDetail() {
       console.log('答对的题目ID:', correctQuestionIds)
       console.log('当前 mode:', mode)
 
-      // 显示 Toast 提示
-      Taro.showToast({ title: `正在移除${correctQuestionIds.length}道错题...`, icon: 'loading', duration: 2000 })
-
       try {
         // 逐个移除答对的错题
         for (const questionId of correctQuestionIds) {
@@ -669,7 +666,6 @@ function ExerciseDetail() {
           console.log('移除结果:', res)
         }
         console.log(`=== 成功移除 ${correctQuestionIds.length} 道错题 ===`)
-        Taro.showToast({ title: `已移除${correctQuestionIds.length}道错题`, icon: 'success', duration: 2000 })
       } catch (err) {
         console.error('=== 移除错题失败 ===:', err)
         Taro.showToast({ title: '移除失败: ' + (err.errMsg || err.message || 'unknown'), icon: 'none', duration: 3000 })
