@@ -1,3 +1,5 @@
 export default {
-  navigationBarTitleText: '答题'
+  navigationBarTitleText: '练习',
+  enableShareAppMessage: true,
+  enableShareTimeline: true
 }

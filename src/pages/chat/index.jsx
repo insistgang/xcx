@@ -1,10 +1,11 @@
 /**
- * AI 聊天页面
+ * 语文助手 - 智能答疑页面
  */
 import { useState, useEffect, useRef } from 'react'
 import { View, Text, ScrollView, Input } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import chatService from '../../services/chat'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 function Chat() {
@@ -29,7 +30,7 @@ function Chat() {
           {
             id: 0,
             role: 'assistant',
-            content: '你好！我是 AI 语文助手，可以帮你解答语文学习中的问题。\n\n你可以问我：\n• 词语释义\n• 诗词赏析\n• 语法知识\n• 写作技巧'
+            content: '你好！我是你的语文学习助手，可以帮你解答语文学习中的问题。\n\n你可以问我：\n• 词语释义\n• 诗词赏析\n• 语法知识\n• 写作技巧\n\n快来提问吧！'
           }
         ])
       }
@@ -50,6 +51,19 @@ function Chat() {
     timerRef.current = setTimeout(() => {
       scrollToBottom()
     }, 300)
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.chat
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.chat.title,
+      query: ''
+    }
   })
 
   // 使用 Taro 的 createSelectorQuery 实现滚动

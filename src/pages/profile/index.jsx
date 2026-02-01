@@ -3,11 +3,12 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { useDidShow, navigateTo } from '@tarojs/taro'
+import { useDidShow, navigateTo, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useAuth } from '../../context/AuthContext'
 import studyService from '../../services/study'
 import adminService from '../../services/admin'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 function Profile() {
@@ -53,6 +54,25 @@ function Profile() {
 
     return unsubscribe
   }, [])
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    const title = userInfo?.nickname 
+      ? `${userInfo.nickname}邀请你一起学习语文 📚`
+      : pageShareConfigs.profile.title
+    return {
+      title,
+      path: '/pages/home/index'
+    }
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.profile.title,
+      query: ''
+    }
+  })
 
   const loadStatistics = async () => {
     try {
@@ -108,6 +128,12 @@ function Profile() {
       title: '学习分析',
       icon: '📈',
       url: '/pages/study-analysis/index'
+    },
+    {
+      id: 'share',
+      title: '分享给好友',
+      icon: '🔗',
+      action: 'share'
     }
   ]
 
@@ -135,6 +161,12 @@ function Profile() {
   const handleMenuClick = (item) => {
     if (item.url) {
       navigateTo({ url: item.url })
+    } else if (item.action === 'share') {
+      // 分享功能 - 显示分享菜单
+      Taro.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline']
+      })
     } else if (item.action === 'settings') {
       // 设置功能
     }

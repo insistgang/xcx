@@ -240,7 +240,7 @@ function Login() {
         </View>
         <View className="feature-item">
           <View className="feature-icon">🤖</View>
-          <View className="feature-text">AI 辅导</View>
+          <View className="feature-text">智能辅导</View>
         </View>
         <View className="feature-item">
           <View className="feature-icon">📊</View>

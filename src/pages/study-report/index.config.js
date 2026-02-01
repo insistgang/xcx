@@ -1,3 +1,5 @@
 export default {
-  navigationBarTitleText: '学习报告'
+  navigationBarTitleText: '学习报告',
+  enableShareAppMessage: true,
+  enableShareTimeline: true
 }

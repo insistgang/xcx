@@ -4,10 +4,11 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Radio, Checkbox } from '@tarojs/components'
-import Taro, { getCurrentInstance, navigateBack, useDidShow } from '@tarojs/taro'
+import Taro, { getCurrentInstance, navigateBack, useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import questionService from '../../services/question'
 import studyService from '../../services/study'
 import { QUESTION_TYPES } from '../../utils/constants'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 收藏状态缓存（用于存储当前用户已收藏的题目ID）
@@ -310,6 +311,19 @@ function ExerciseDetail() {
     setStartTime(Date.now())
     loadQuestions()
     loadFavorites()
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.exercise
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.exercise.title,
+      query: ''
+    }
   })
 
   /**

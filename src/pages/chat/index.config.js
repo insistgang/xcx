@@ -1,3 +1,5 @@
 export default {
-  navigationBarTitleText: 'AI 助手'
+  navigationBarTitleText: '语文助手',
+  enableShareAppMessage: true,
+  enableShareTimeline: true
 }

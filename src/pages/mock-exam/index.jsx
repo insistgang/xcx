@@ -5,11 +5,12 @@
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { navigateBack, useDidShow } from '@tarojs/taro'
+import { navigateBack, useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { QUESTION_TYPES } from '../../utils/constants'
 import studyService from '../../services/study'
 import questionService from '../../services/question'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 引入扩展后的题目数据（1000道题）
@@ -275,6 +276,19 @@ function MockExam() {
   // 使用 useDidShow 确保题目在页面显示时加载
   useDidShow(() => {
     loadQuestions()
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.home
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.home.title,
+      query: ''
+    }
   })
 
   const loadQuestions = async () => {

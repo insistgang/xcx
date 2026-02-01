@@ -28,7 +28,7 @@ export default {
   window: {
     backgroundTextStyle: 'light',
     navigationBarBackgroundColor: '#4A90E2',
-    navigationBarTitleText: 'AI语文助手',
+    navigationBarTitleText: '语文助手',
     navigationBarTextStyle: 'white',
     backgroundColor: '#F5F5F5'
   },
@@ -53,7 +53,7 @@ export default {
       },
       {
         pagePath: 'pages/chat/index',
-        text: 'AI',
+        text: '答疑',
         iconPath: 'images/tabbar/chat.png',
         selectedIconPath: 'images/tabbar/chat-active.png'
       },

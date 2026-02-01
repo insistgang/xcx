@@ -3,9 +3,10 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { useDidShow, navigateTo } from '@tarojs/taro'
+import { useDidShow, navigateTo, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import studyService from '../../services/study'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 题型配置
@@ -63,6 +64,19 @@ function Exercise() {
 
   useDidShow(() => {
     loadStats()
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.exercise
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.exercise.title,
+      query: ''
+    }
   })
 
   // 碎片化学习 - 2x2彩色卡片（传递正确的题目数量参数）

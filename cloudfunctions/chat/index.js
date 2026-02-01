@@ -219,7 +219,7 @@ async function sendMessage(openid, message, conversationId = null) {
       return {
         success: true,
         data: {
-          messageId: aiMsgRes._id,
+          messageId: assistantMsgRes._id,
           reply: localAnswer,
           conversationId
         }
@@ -233,8 +233,16 @@ async function sendMessage(openid, message, conversationId = null) {
     console.log('DEEPSEEK_API_KEY 前10位:', DEEPSEEK_API_KEY ? DEEPSEEK_API_KEY.substring(0, 10) + '...' : 'N/A')
 
     if (!DEEPSEEK_API_KEY || DEEPSEEK_API_KEY === 'your-deepseek-api-key' || DEEPSEEK_API_KEY.length < 10) {
-      console.log('❌ API Key 未配置或无效，使用默认回复')
-      return await getDefaultReply(openid, conversationId, message, 'API Key 未配置')
+      console.log('❌ API Key 未配置或无效')
+      // 返回错误信息，让用户知道需要配置 API Key
+      return {
+        success: true,
+        data: {
+          messageId: Date.now(),
+          reply: '【系统提示】\n\n语文助手服务正在配置中，请稍后重试。\n\n如果问题持续存在，请联系管理员检查 DeepSeek API Key 配置。',
+          conversationId
+        }
+      }
     }
 
     console.log('✅ API Key 有效，准备调用 DeepSeek API...')
@@ -319,7 +327,7 @@ async function sendMessage(openid, message, conversationId = null) {
     }
 
     const reply = apiResponse.data.choices[0].message.content
-    console.log('AI 回复长度:', reply.length)
+    console.log('助手回复长度:', reply.length)
 
     // 保存用户消息
     await safeAdd({
@@ -330,8 +338,8 @@ async function sendMessage(openid, message, conversationId = null) {
       createdAt: db.serverDate()
     })
 
-    // 保存AI回复
-    const aiMsgRes = await safeAdd({
+    // 保存助手回复
+    const assistantMsgRes = await safeAdd({
       _openid: openid,
       conversationId,
       role: 'assistant',
@@ -362,7 +370,7 @@ async function sendMessage(openid, message, conversationId = null) {
  * 获取默认回复
  */
 async function getDefaultReply(openid, conversationId, message, errorMsg = null) {
-  const defaultReply = `我是AI语文助手，可以帮你解答语文学习中的问题。
+  const defaultReply = `我是语文学习助手，可以帮你解答语文学习中的问题。
 
 你可以问我关于：
 📖 词语释义、成语典故

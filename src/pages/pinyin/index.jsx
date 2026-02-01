@@ -4,10 +4,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
 import Taro from '@tarojs/taro'
-import { useDidShow } from '@tarojs/taro'
+import { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import studyService from '../../services/study'
 import questionService from '../../services/question'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 收藏状态缓存
@@ -151,6 +152,19 @@ function Pinyin() {
   useDidShow(() => {
     startPractice()
     loadFavorites()
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.pinyin
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.pinyin.title,
+      query: ''
+    }
   })
 
   /**

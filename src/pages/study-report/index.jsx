@@ -3,8 +3,9 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { useDidShow } from '@tarojs/taro'
+import { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import studyService from '../../services/study'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 function StudyReport() {
@@ -19,6 +20,19 @@ function StudyReport() {
 
   useDidShow(() => {
     loadReport()
+  })
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.studyReport
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.studyReport.title,
+      query: ''
+    }
   })
 
   const loadReport = async () => {

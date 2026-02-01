@@ -3,10 +3,11 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { useDidShow, navigateTo } from '@tarojs/taro'
+import { useDidShow, useShareAppMessage, useShareTimeline, navigateTo } from '@tarojs/taro'
 import Taro from '@tarojs/taro'
 import questionService from '../../services/question'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 本地缓存：记录用户已经练习过的收藏题目 ID
@@ -28,6 +29,9 @@ function FavoritePractice() {
       eventBus.off(EVENTS.STUDY_RECORD_UPDATED, handleStudyRecordUpdated)
     }
   })
+
+  useShareAppMessage(() => pageShareConfigs.exercise)
+  useShareTimeline(() => pageShareConfigs.exercise)
 
   /**
    * 当练习记录更新时，刷新已练习计数

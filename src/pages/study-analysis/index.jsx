@@ -3,7 +3,9 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
+import { useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import studyService from '../../services/study'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 function StudyAnalysis() {
@@ -17,6 +19,19 @@ function StudyAnalysis() {
   useEffect(() => {
     loadAnalysis()
   }, [])
+
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return pageShareConfigs.profile
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.profile.title,
+      query: ''
+    }
+  })
 
   const loadAnalysis = async () => {
     try {

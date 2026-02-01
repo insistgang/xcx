@@ -3,8 +3,9 @@
  */
 import { useState } from 'react'
 import { View, Text } from '@tarojs/components'
-import { useDidShow, navigateTo, showToast } from '@tarojs/taro'
+import { useDidShow, useShareAppMessage, useShareTimeline, navigateTo, showToast } from '@tarojs/taro'
 import questionService from '../../services/question'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 function WrongPractice() {
@@ -14,6 +15,9 @@ function WrongPractice() {
   useDidShow(() => {
     loadWrongQuestions()
   })
+
+  useShareAppMessage(() => pageShareConfigs.exercise)
+  useShareTimeline(() => pageShareConfigs.exercise)
 
   const loadWrongQuestions = async () => {
     setLoading(true)

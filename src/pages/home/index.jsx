@@ -3,10 +3,11 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView, Image } from '@tarojs/components'
-import { useDidShow, navigateTo, switchTab } from '@tarojs/taro'
+import { useDidShow, navigateTo, switchTab, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { useAuth } from '../../context/AuthContext'
 import studyService from '../../services/study'
 import eventBus, { EVENTS } from '../../utils/eventBus'
+import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
 // 名言警句库
@@ -72,6 +73,24 @@ function Home() {
     loadStats()
   })
 
+  // 启用页面分享
+  useShareAppMessage(() => {
+    return {
+      ...pageShareConfigs.home,
+      success: () => {
+        console.log('分享成功')
+      }
+    }
+  })
+
+  // 启用朋友圈分享
+  useShareTimeline(() => {
+    return {
+      title: pageShareConfigs.home.title,
+      query: ''
+    }
+  })
+
   // 名言轮播
   useEffect(() => {
     const timer = setInterval(() => {
@@ -103,7 +122,7 @@ function Home() {
   // 快捷功能配置
   const quickActions = [
     { id: 'mock', name: '模拟考试', icon: '📝', desc: '真题模拟测试', path: '/pages/mock-exam/index' },
-    { id: 'chat', name: 'AI助手', icon: '🤖', desc: '智能答疑解惑', path: '/pages/chat/index' },
+    { id: 'chat', name: '智能答疑', icon: '🤖', desc: '语文问题解答', path: '/pages/chat/index' },
     { id: 'record', name: '学习记录', icon: '📊', desc: '查看学习历史', path: '/pages/study-record/index' },
     { id: 'report', name: '学习报告', icon: '📈', desc: '学习数据分析', path: '/pages/study-report/index' }
   ]
