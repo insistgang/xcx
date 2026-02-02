@@ -416,10 +416,13 @@ function MockExam() {
   }
 
   const handleAnswer = (value) => {
-    setAnswers({
-      ...answers,
-      [questions[currentIndex].id]: value
-    })
+    const questionId = questions[currentIndex]?.id
+    if (!questionId) return
+    
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: value
+    }))
   }
 
   const handlePrev = () => {
@@ -439,7 +442,26 @@ function MockExam() {
     setShowCard(false)
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (force = false) => {
+    // 检查未答题目
+    const answeredCount = Object.keys(answers).length
+    const unansweredCount = questions.length - answeredCount
+    
+    if (unansweredCount > 0 && !force) {
+      Taro.showModal({
+        title: '确认交卷',
+        content: `你还有 ${unansweredCount} 道题未作答，确定要交卷吗？`,
+        confirmText: '仍要交卷',
+        cancelText: '继续答题',
+        success: (res) => {
+          if (res.confirm) {
+            handleSubmit(true)
+          }
+        }
+      })
+      return
+    }
+    
     if (timerId) clearInterval(timerId)
 
     // 计算分数并保存数据
