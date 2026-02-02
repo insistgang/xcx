@@ -22,7 +22,8 @@ export default {
     'pages/profile/index',
     'pages/admin/index',
     'pages/admin/user-detail/index',
-    'pages/admin-import/index'
+    'pages/admin-import/index',
+    'pages/admin-manage/index'
   ],
 
   window: {

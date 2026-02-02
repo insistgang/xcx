@@ -95,6 +95,12 @@ function AdminPage() {
         >
           <Text className="tab-text">用户管理</Text>
         </View>
+        <View
+          className="tab-item"
+          onClick={() => navigateTo({ url: '/pages/admin-manage/index' })}
+        >
+          <Text className="tab-text">权限管理</Text>
+        </View>
       </View>
 
       <ScrollView scrollY className="content-scroll">

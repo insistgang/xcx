@@ -24,6 +24,10 @@
     {
       "name": "vocabulary",
       "env": "cloud1-0gujim8sd49d8866"
+    },
+    {
+      "name": "admin-manage",
+      "env": "cloud1-0gujim8sd49d8866"
     }
   ]
 }
