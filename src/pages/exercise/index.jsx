@@ -3,10 +3,11 @@
  */
 import { useState, useEffect } from 'react'
 import { View, Text, ScrollView } from '@tarojs/components'
-import { useDidShow, navigateTo, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
+import { useDidShow, navigateTo, useShareAppMessage, useShareTimeline, switchTab } from '@tarojs/taro'
 import studyService from '../../services/study'
 import eventBus, { EVENTS } from '../../utils/eventBus'
 import { pageShareConfigs } from '../../utils/share'
+import { requireLogin } from '../../utils/authCheck'
 import './index.less'
 
 // 题型配置
@@ -79,12 +80,20 @@ function Exercise() {
     }
   })
 
+  // 处理练习卡片点击（需要登录）
+  const handleCardClick = async (path) => {
+    const isLogin = await requireLogin({ message: '练习功能需要登录后使用' })
+    if (isLogin) {
+      navigateTo({ url: path })
+    }
+  }
+
   // 碎片化学习 - 2x2彩色卡片（传递正确的题目数量参数）
   const fragmentCards = [
-    { id: 'speed3', name: '极速3题', icon: '⚡', duration: '1分钟', gradient: 'orange-red', action: () => navigateTo({ url: '/pages/exercise-detail/index?count=3' }) },
-    { id: 'quick5', name: '快速5题', icon: '🚀', duration: '2分钟', gradient: 'cyan-green', action: () => navigateTo({ url: '/pages/exercise-detail/index?count=5' }) },
-    { id: 'random10', name: '随机10题', icon: '🎲', duration: '5分钟', gradient: 'green', action: () => navigateTo({ url: '/pages/exercise-detail/index?count=10' }) },
-    { id: 'mock', name: '模拟考试', icon: '📊', duration: '120分钟', gradient: 'orange-yellow', action: () => navigateTo({ url: '/pages/mock-exam/index' }) }
+    { id: 'speed3', name: '极速3题', icon: '⚡', duration: '1分钟', gradient: 'orange-red', action: () => handleCardClick('/pages/exercise-detail/index?count=3') },
+    { id: 'quick5', name: '快速5题', icon: '🚀', duration: '2分钟', gradient: 'cyan-green', action: () => handleCardClick('/pages/exercise-detail/index?count=5') },
+    { id: 'random10', name: '随机10题', icon: '🎲', duration: '5分钟', gradient: 'green', action: () => handleCardClick('/pages/exercise-detail/index?count=10') },
+    { id: 'mock', name: '模拟考试', icon: '📊', duration: '120分钟', gradient: 'orange-yellow', action: () => handleCardClick('/pages/mock-exam/index') }
   ]
 
   // 更多功能 - 指向专门页面
@@ -127,14 +136,20 @@ function Exercise() {
           <View className="review-grid">
             <View
               className="review-item review-wrong"
-              onClick={() => navigateTo({ url: '/pages/wrong-practice/index' })}
+              onClick={async () => {
+                const isLogin = await requireLogin({ message: '查看错题需要登录' })
+                if (isLogin) navigateTo({ url: '/pages/wrong-practice/index' })
+              }}
             >
               <Text className="review-icon">❌</Text>
               <Text className="review-name">错题重做</Text>
             </View>
             <View
               className="review-item review-favorite"
-              onClick={() => navigateTo({ url: '/pages/favorite-practice/index' })}
+              onClick={async () => {
+                const isLogin = await requireLogin({ message: '查看收藏需要登录' })
+                if (isLogin) navigateTo({ url: '/pages/favorite-practice/index' })
+              }}
             >
               <Text className="review-icon">⭐</Text>
               <Text className="review-name">收藏练习</Text>

@@ -80,6 +80,13 @@ function Login() {
   }
 
   /**
+   * 游客模式进入首页
+   */
+  const handleGuestEnter = () => {
+    Taro.switchTab({ url: '/pages/home/index' })
+  }
+
+  /**
    * 切换协议勾选状态
    */
   const toggleAgreement = () => {
@@ -220,11 +227,23 @@ function Login() {
         )}
 
         {mode === 'login' && (
-          <View className="form-switch">
-            <View className="switch-link" onClick={() => setMode('register')}>
-              还没有账号？去注册
+          <>
+            <View className="form-switch">
+              <View className="switch-link" onClick={() => setMode('register')}>
+                还没有账号？去注册
+              </View>
             </View>
-          </View>
+            <View className="guest-section">
+              <View className="guest-divider">
+                <View className="guest-line" />
+                <Text className="guest-text">或</Text>
+                <View className="guest-line" />
+              </View>
+              <View className="guest-btn" onClick={handleGuestEnter}>
+                暂不登录，先浏览看看
+              </View>
+            </View>
+          </>
         )}
       </View>
 

@@ -8,6 +8,7 @@ import { useAuth } from '../../context/AuthContext'
 import studyService from '../../services/study'
 import eventBus, { EVENTS } from '../../utils/eventBus'
 import { pageShareConfigs } from '../../utils/share'
+import { requireLogin } from '../../utils/authCheck'
 import './index.less'
 
 // 名言警句库
@@ -127,7 +128,17 @@ function Home() {
     { id: 'report', name: '学习报告', icon: '📈', desc: '学习数据分析', path: '/pages/study-report/index' }
   ]
 
-  const handleNavigate = (path) => {
+  // 处理导航（学习模块游客可进，其他功能需登录）
+  const handleNavigate = async (path) => {
+    // 学习模块允许游客浏览
+    const guestPaths = ['/pages/vocabulary', '/pages/idiom', '/pages/pinyin', '/pages/correction']
+    const isGuestPath = guestPaths.some(p => path.includes(p))
+    
+    if (!isGuestPath) {
+      const isLogin = await requireLogin({ message: '该功能需要登录后使用' })
+      if (!isLogin) return
+    }
+    
     // chat是tabBar页面，需要使用switchTab
     if (path.includes('/pages/chat/index')) {
       switchTab({ url: path })
