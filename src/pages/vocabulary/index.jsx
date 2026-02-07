@@ -1,19 +1,16 @@
 /**
  * 词汇学习页面 - 选择题模式
+ * 使用 usePractice Hook 重构，代码量大幅减少
  */
-import { useState, useEffect, useRef } from 'react'
-import { View, Text, ScrollView } from '@tarojs/components'
+import { useRef } from 'react'
+import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import studyService from '../../services/study'
-import questionService from '../../services/question'
+import { usePractice } from '../../hooks/usePractice'
 import eventBus, { EVENTS } from '../../utils/eventBus'
 import { pageShareConfigs } from '../../utils/share'
 import './index.less'
 
-// 收藏状态缓存
-let FAVORITES_CACHE = new Set()
-
-// 词汇选择题库（基于K12真题）
+// 词汇选择题库（80题精选）
 const VOCABULARY_QUESTIONS = [
   // 词语释义选择
   { id: 'v001', type: 'meaning', question: '"焕然一新"的意思是：', options: ['A. 完全改变', 'B. 出现崭新的面貌', 'C. 美丽无比', 'D. 重新开始'], correctAnswer: 1, explanation: '"焕然一新"形容出现了崭新的面貌。' },
@@ -32,7 +29,7 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v012', type: 'fill', question: '依次填入横线处最恰当的词语：\n财政投入与改善民生____相融合，____了城市运行水平的提高。', options: ['A. 提升/促进', 'B. 提高/促成', 'C. 提升/促成', 'D. 提高/促进'], correctAnswer: 0, explanation: '"提升"与水平搭配，"促进"与提高搭配。' },
   { id: 'v013', type: 'fill', question: '依次填入横线处最恰当的词语：\n在新时代背景下，明确竞技体育的未来发展____和改良策略，实现竞技体育发展理念的____。', options: ['A. 导向/转移', 'B. 方向/转变', 'C. 导向/转变', 'D. 方向/转移'], correctAnswer: 2, explanation: '"发展导向"是常用搭配，"发展理念转变"也符合语境。' },
   { id: 'v014', type: 'fill', question: '依次填入横线处最恰当的词语：\n体育比赛中，技术是完成战术配合的____，而战术的不断____和发展又对技术提出更高要求。', options: ['A. 基准/演示', 'B. 基础/演变', 'C. 基准/演变', 'D. 基础/演示'], correctAnswer: 1, explanation: '"基础"与"配合"搭配，"演变"与"发展"搭配。' },
-  { id: 'v015', type: 'fill', question: '依次填入横线处最恰当的词语：\n____竞技体育的快速发展，体育比赛会给人们带来更大的视觉震撼。', options: ['A. 随着', 'B. 随同', 'C. 伴随', 'D. 跟随'], correctAnswer: 0, explanation: '"随着"表示伴随情况的变化。' },
+  { id: 'v015', type: 'fill', question: '____竞技体育的快速发展，体育比赛会给人们带来更大的视觉震撼。', options: ['A. 随着', 'B. 随同', 'C. 伴随', 'D. 跟随'], correctAnswer: 0, explanation: '"随着"表示伴随情况的变化。' },
 
   // 词语书写判断
   { id: 'v016', type: 'writing', question: '下列各组词语中，书写完全正确的一项是：', options: ['A. 编纂 闷葫芦 世外桃园', 'B. 辐射 微循环 偃旗息鼓', 'C. 表彰 峰窝煤 雷厉风行', 'D. 临摹 绊脚石 灸手可热'], correctAnswer: 1, explanation: 'A项"世外桃园"应为"世外桃源"；C项"峰窝煤"应为"蜂窝煤"；D项"灸手可热"应为"炙手可热"。' },
@@ -46,10 +43,10 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v022', type: 'distinguish', question: '"厚积薄发"形容：', options: ['A. 积累后释放', 'B. 长时间积累后慢慢释放', 'C. 多积少发', 'D. 发财致富'], correctAnswer: 1, explanation: '"厚积薄发"形容长时间积累，慢慢释放出来。' },
   { id: 'v023', type: 'distinguish', question: '"脍炙人口"形容：', options: ['A. 很多人吃', 'B. 美味可口', 'C. 为众人所称颂', 'D. 流行广泛'], correctAnswer: 2, explanation: '"脍炙人口"比喻好的诗文或事物为众人所称颂。' },
   { id: 'v024', type: 'distinguish', question: '"望洋兴叹"比喻：', options: ['A. 看海感叹', 'B. 力不从心', 'C. 无可奈何', 'D. 前途渺茫'], correctAnswer: 2, explanation: '"望洋兴叹"比喻做事时因力不胜任或没有条件而感到无可奈何。' },
-  { id: 'v025', type: 'distinguish', question: '"叶公好龙"比喻：', options: ['A. 真的喜欢龙', 'B. 口头上说爱好，实际不真爱好', 'C. 喜欢动物', 'D. 爱好广泛'], correctAnswer: 1, explanation: '"叶公好龙"比喻口头上说爱好某事物，实际上并不真爱好。' },
+  { id: 'v025', type: 'distinguish', question: '"叶公好龙"比喻：', options: ['A. 真的喜欢龙', 'B. 口头上说爱好，实际不真爱好', 'C. 喜欢动物', 'D. 爱好广泛'], correctAnswer: 1, explanation: '"叶公好龙"比喻口头上说某事物，实际不真爱好。' },
   { id: 'v026', type: 'distinguish', question: '"杞人忧天"比喻：', options: ['A. 忧虑天气', 'B. 不必要的忧虑', 'C. 担心天下', 'D. 爱管闲事'], correctAnswer: 1, explanation: '"杞人忧天"比喻不必要的或缺乏根据的忧虑和担心。' },
   { id: 'v027', type: 'distinguish', question: '"杯弓蛇影"比喻：', options: ['A. 杯子和蛇', 'B. 疑神疑鬼', 'C. 恐惧害怕', 'D. 危险重重'], correctAnswer: 1, explanation: '"杯弓蛇影"比喻因疑神疑鬼而引起恐惧。' },
-  { id: 'v028', type: 'distinguish', question: '"画蛇添足"比喻：', options: ['A. 画画很好', 'B. 做事认真', 'C. 做多余的事反不好', 'D. 画蛇技巧高超'], correctAnswer: 2, explanation: '"画蛇添足"比喻做了多余的事，非但无益，反而不合适。' },
+  { id: 'v028', type: 'distinguish', question: '"画蛇添足"比喻：', options: ['A. 画画很好', 'B. 做事多余的事反不好', 'C. 做多余的事', 'D. 画蛇技巧高超'], correctAnswer: 1, explanation: '"画蛇添足"比喻做了多余的事，非但无益，反而不合适。' },
   { id: 'v029', type: 'distinguish', question: '"守株待兔"比喻：', options: ['A. 等待机会', 'B. 死守经验不知变通', 'C. 耐心等待', 'D. 期盼成功'], correctAnswer: 1, explanation: '"守株待兔"比喻死守狭隘经验，不知变通。' },
   { id: 'v030', type: 'distinguish', question: '"刻舟求剑"比喻：', options: ['A. 记性好', 'B. 拘泥成法不知变通', 'C. 做事坚持', 'D. 纪念深刻'], correctAnswer: 1, explanation: '"刻舟求剑"比喻拘泥成法，不知道变通。' },
   { id: 'v031', type: 'distinguish', question: '"亡羊补牢"的意思是：', options: ['A. 羊丢了', 'B. 出问题后补救', 'C. 太晚了', 'D. 修补羊圈'], correctAnswer: 1, explanation: '"亡羊补牢"比喻出了问题以后想办法补救，可以防止继续受损失。' },
@@ -61,7 +58,7 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v037', type: 'distinguish', question: '"拔苗助长"比喻：', options: ['A. 帮助植物生长', 'B. 急于求成反而坏事', 'C. 辛勤劳动', 'D. 农业生产'], correctAnswer: 1, explanation: '"拔苗助长"比喻违反事物发展的客观规律，急于求成，反而把事情弄糟。' },
   { id: 'v038', type: 'distinguish', question: '"滥竽充数"比喻：', options: ['A. 音乐演奏', 'B. 没有真才实学的人混在行家里面充数', 'C. 人多热闹', 'D. 欺骗行为'], correctAnswer: 1, explanation: '"滥竽充数"比喻没有真才实学的人混在行家里面充数。' },
   { id: 'v039', type: 'distinguish', question: '"对牛弹琴"比喻：', options: ['A. 对牛弹琴', 'B. 对不懂道理的人讲道理', 'C. 音乐欣赏', 'D. 耐心教学'], correctAnswer: 1, explanation: '"对牛弹琴"比喻对不讲道理的人讲道理。' },
-  { id: 'v040', type: 'distinguish', question: '"破釜沉舟"比喻：', options: ['A. 砸锅沉船', 'B. 下定决心不顾一切地干到底', 'C. 失败了', 'D. 赌博行为'], correctAnswer: 1, explanation: '"破釜沉舟"比喻下决心不顾一切地干到底。' },
+  { id: 'v040', type: 'distinguish', question: '"破釜沉舟"比喻：', options: ['A. 破锅沉船', 'B. 下定决心不顾一切地干到底', 'C. 失败了', 'D. 赌博行为'], correctAnswer: 1, explanation: '"破釜沉舟"比喻下决心不顾一切地干到底。' },
   { id: 'v041', type: 'distinguish', question: '"卧薪尝胆"形容：', options: ['A. 睡觉吃苦', 'B. 刻苦自励', 'C. 生活艰苦', 'D. 坚持不懈'], correctAnswer: 1, explanation: '"卧薪尝胆"形容人刻苦自励，发愤图强。' },
   { id: 'v042', type: 'distinguish', question: '"三顾茅庐"比喻：', options: ['A. 拜访三次', 'B. 诚心诚意地邀请人家', 'C. 喜欢旅游', 'D. 参观茅庐'], correctAnswer: 1, explanation: '"三顾茅庐"比喻诚心诚意地邀请人家。' },
   { id: 'v043', type: 'distinguish', question: '"负荆请罪"表示：', options: ['A. 承认错误', 'B. 向人认错赔罪', 'C. 道歉', 'D. 感谢帮助'], correctAnswer: 1, explanation: '"负荆请罪"表示向人认错赔罪。' },
@@ -75,7 +72,7 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v049', type: 'synonym', question: '"品味"和"品位"的区别是：', options: ['A. 完全相同', 'B. 品味是品尝，品位是品质', 'C. 品味是品质，品位是品尝', 'D. 都是品尝的意思'], correctAnswer: 1, explanation: '"品味"指品尝、体会，"品位"指品质、水平。' },
 
   // 词语搭配判断
-  { id: 'v050', type: 'collocation', question: '下列搭配正确的一项是：', options: ['A. 发挥作用', 'B. 发扬作用', 'C. 发生作用', 'D. 发扬作用'], correctAnswer: 0, explanation: '"发挥作用"是正确搭配，"发扬"一般与"精神""传统"搭配。' },
+  { id: 'v050', type: 'collocation', question: '下列搭配正确的一项是：', options: ['A. 发挥作用', 'B. 发扬作用', 'C. 发生作用', 'D. 发扬作用'], correctAnswer: 0, explanation: '"发挥作用"是正确搭配。' },
   { id: 'v051', type: 'collocation', question: '下列搭配正确的一项是：', options: ['A. 改进缺点', 'B. 改正缺点', 'C. 改正错误', 'D. 改进错误'], correctAnswer: 2, explanation: '"改正错误""改进工作"是正确搭配。' },
   { id: 'v052', type: 'collocation', question: '下列搭配正确的一项是：', options: ['A. 提高效率', 'B. 增高效率', 'C. 升高效率', 'D. 加高效率'], correctAnswer: 0, explanation: '"提高效率"是正确搭配。' },
   { id: 'v053', type: 'collocation', question: '下列搭配正确的一项是：', options: ['A. 增进友谊', 'B. 增加友谊', 'C. 提高友谊', 'D. 升高友谊'], correctAnswer: 0, explanation: '"增进友谊"是正确搭配。' },
@@ -102,8 +99,6 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v072', type: 'usage', question: '"不辞劳苦"的意思是：', options: ['A. 不怕辛苦', 'B. 不推辞劳苦', 'C. 不怕劳累', 'D. 辛勤劳作'], correctAnswer: 1, explanation: '"不辞劳苦"形容不推辞劳累辛苦。' },
   { id: 'v073', type: 'usage', question: '"任劳任怨"形容：', options: ['A. 劳作', 'B. 做事不辞劳苦，不怕埋怨', 'C. 任劳任怨', 'D. 辛勤工作'], correctAnswer: 1, explanation: '"任劳任怨"形容做事不辞劳苦，不怕别人埋怨。' },
   { id: 'v074', type: 'usage', question: '"一丝不苟"形容：', options: ['A. 不马虎', 'B. 连最细微的地方也不马虎', 'C. 认真', 'D. 细心'], correctAnswer: 1, explanation: '"一丝不苟"形容连最细微的地方也不马虎。' },
-
-  // 词语理解与运用
   { id: 'v075', type: 'understand', question: '"心旷神怡"形容：', options: ['A. 心情舒畅', 'B. 精神愉快', 'C. 心胸开阔，精神愉快', 'D. 高兴'], correctAnswer: 2, explanation: '"心旷神怡"形容心胸开阔，精神愉快。' },
   { id: 'v076', type: 'understand', question: '"赏心悦目"形容：', options: ['A. 看着舒服', 'B. 因欣赏美好景物而心情舒畅', 'C. 美好', 'D. 悦目'], correctAnswer: 1, explanation: '"赏心悦目"形容因欣赏美好的景物而心情舒畅。' },
   { id: 'v077', type: 'understand', question: '"心花怒放"形容：', options: ['A. 高兴', 'B. 极其高兴', 'C. 开心', 'D. 兴奋'], correctAnswer: 1, explanation: '"心花怒放"形容极其高兴。' },
@@ -113,22 +108,31 @@ const VOCABULARY_QUESTIONS = [
 ]
 
 function Vocabulary() {
-  const [questions, setQuestions] = useState([])
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [selectedAnswer, setSelectedAnswer] = useState(null)
-  const [showResult, setShowResult] = useState(false)
-  const [score, setScore] = useState(0)
-  const [completed, setCompleted] = useState(false)
-  const [isFavorited, setIsFavorited] = useState(false)
-  const [favoriteLoading, setFavoriteLoading] = useState(false)
-  // 记录每道题的答案，用于保存到 answer_history
-  const userAnswers = useRef({})
+  const {
+    questions,
+    currentIndex,
+    selectedAnswer,
+    showResult,
+    score,
+    completed,
+    isFavorited,
+    favoriteLoading,
+    loading,
+    currentQuestion,
+    progress,
+    startPractice,
+    toggleFavorite,
+    selectAnswer,
+    nextQuestion,
+    reset,
+  } = usePractice({
+    questionsData: VOCABULARY_QUESTIONS,
+    practiceType: 'vocabulary',
+  })
 
-  const currentQuestion = questions[currentIndex]
-
+  // 页面生命周期
   useDidShow(() => {
     startPractice()
-    loadFavorites()
   })
 
   // 启用页面分享
@@ -136,7 +140,6 @@ function Vocabulary() {
     return pageShareConfigs.vocabulary
   })
 
-  // 启用朋友圈分享
   useShareTimeline(() => {
     return {
       title: pageShareConfigs.vocabulary.title,
@@ -144,203 +147,28 @@ function Vocabulary() {
     }
   })
 
-  /**
-   * 加载用户的收藏列表
-   */
-  const loadFavorites = async () => {
-    try {
-      const favorites = await questionService.getFavorites(1, 1000)
-      FAVORITES_CACHE = new Set(favorites.map(f => f.id || f._id))
-      updateFavoriteStatus()
-    } catch (err) {
-      console.error('加载收藏失败:', err)
-    }
-  }
-
-  /**
-   * 更新当前题目的收藏状态
-   */
-  const updateFavoriteStatus = () => {
-    if (currentQuestion) {
-      setIsFavorited(FAVORITES_CACHE.has(currentQuestion.id))
-    }
-  }
-
-  /**
-   * 切换收藏状态
-   */
-  const handleToggleFavorite = async () => {
-    if (!currentQuestion || favoriteLoading) return
-
-    setFavoriteLoading(true)
-
-    // 打印当前题目数据
-    console.log('=== handleToggleFavorite 当前题目 ===')
-    console.log('currentQuestion:', currentQuestion)
-
-    try {
-      // 传递完整的题目数据
-      const questionData = {
-        id: currentQuestion.id,
-        type: currentQuestion.type || 'vocabulary',
-        question: currentQuestion.question,
-        options: currentQuestion.options,
-        correctAnswer: currentQuestion.correctAnswer,
-        explanation: currentQuestion.explanation || ''
-      }
-
-      console.log('=== 准备发送的 questionData ===', questionData)
-
-      const success = await questionService.toggleFavorite(currentQuestion.id, questionData)
-
-      console.log('=== toggleFavorite 返回结果 ===', success)
-
-      if (success) {
-        if (isFavorited) {
-          FAVORITES_CACHE.delete(currentQuestion.id)
-        } else {
-          FAVORITES_CACHE.add(currentQuestion.id)
-        }
-        setIsFavorited(!isFavorited)
-        Taro.showToast({
-          title: isFavorited ? '已取消收藏' : '已收藏',
-          icon: isFavorited ? 'none' : 'success',
-          duration: 1500
-        })
-      }
-    } catch (err) {
-      console.error('收藏失败:', err)
-      Taro.showToast({ title: '操作失败', icon: 'none' })
-    } finally {
-      setFavoriteLoading(false)
-    }
-  }
-
-  // 题目变化时更新收藏状态
-  useEffect(() => {
-    updateFavoriteStatus()
-  }, [currentIndex, questions])
-
-  const startPractice = () => {
-    // 随机打乱题目，取10道
-    const shuffled = [...VOCABULARY_QUESTIONS].sort(() => Math.random() - 0.5)
-    setQuestions(shuffled.slice(0, 10))
-    setCurrentIndex(0)
-    setSelectedAnswer(null)
-    setShowResult(false)
-    setScore(0)
-    setCompleted(false)
-    userAnswers.current = {} // 清空答案记录
-  }
-
-  const handleAnswer = (index) => {
-    if (selectedAnswer !== null) {
-      return
-    }
-    setSelectedAnswer(index)
-
-    const currentQuestion = questions[currentIndex]
-    // 记录用户答案
-    userAnswers.current[currentQuestion.id] = index
-
-    if (index === currentQuestion.correctAnswer) {
-      setScore(score + 1)
-    }
-    setShowResult(true)
-  }
-
-  const handleNext = () => {
-    if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1)
-      setSelectedAnswer(null)
-      setShowResult(false)
-    } else {
-      finishPractice()
-    }
-  }
-
-  const finishPractice = async () => {
-    setCompleted(true)
-
-    // 准备答题数据，包含完整题目信息
-    const answerData = questions.map(q => {
-      const userAnswer = userAnswers.current[q.id] ?? -1
-      const isCorrect = userAnswer === q.correctAnswer
-      return {
-        questionId: q.id,
-        answer: userAnswer,
-        isCorrect,
-        questionType: 'vocabulary',
-        // 包含完整题目信息，以便错题重做时使用
-        questionText: q.question || '',
-        options: q.options || [],
-        correctAnswer: q.correctAnswer
-      }
-    })
-
-    // 1. 保存答题历史到 answer_history
-    try {
-      const submitResult = await Taro.cloud.callFunction({
-        name: 'question',
-        data: {
-          action: 'submitBatch',
-          answers: answerData
-        }
-      })
-      console.log('=== 云函数返回完整数据 ===', JSON.stringify(submitResult))
-      // 兼容两种返回格式：扁平结构和嵌套 data 结构
-      const result = submitResult.result || submitResult || {}
-      console.log('=== result ===', JSON.stringify(result))
-      // 新格式：直接从 result 读取
-      // 旧格式：从 result.data 读取
-      const saved = result.savedCount ?? result.data?.savedCount ?? '?'
-      const version = result.version ?? result.data?.version ?? 'no-ver'
-      console.log('=== 解析结果 ===', { saved, version, total: answerData.length })
-    } catch (err) {
-      console.error('=== 云函数调用失败 ===', err)
-      Taro.showToast({ title: '保存失败，请重试', icon: 'none', duration: 2000 })
-      throw err
-    }
-
-    // 2. 保存学习记录到 study_records
-    try {
-      await studyService.addRecord({
-        type: 'vocabulary',
-        title: '词汇学习',
-        score: Math.round((score / questions.length) * 100),
-        totalQuestions: questions.length,
-        correctAnswers: score,
-        duration: 5
-      })
-
-      eventBus.emit(EVENTS.STUDY_RECORD_UPDATED, {
-        type: 'vocabulary',
-        score: Math.round((score / questions.length) * 100),
-        correctCount: score,
-        totalCount: questions.length
-      })
-    } catch (err) {
-      console.error('保存学习记录失败:', err)
-    }
-  }
-
-  if (questions.length === 0) {
-    return <View className="vocabulary-page"><Text>加载中...</Text></View>
+  if (loading || questions.length === 0) {
+    return (
+      <View className="vocabulary-page">
+        <View className="practice-loading">加载中...</View>
+      </View>
+    )
   }
 
   if (completed) {
+    const scorePercent = Math.round((score / questions.length) * 100)
+    const praise = scorePercent >= 80 ? '太棒了！' : scorePercent >= 60 ? '继续加油！' : '再练习一下吧！'
+
     return (
       <View className="vocabulary-page">
         <View className="result-page">
           <View className="result-card">
             <Text className="result-title">练习完成！</Text>
             <Text className="result-score">{score} / {questions.length}</Text>
-            <Text className="result-desc">
-              {score >= questions.length * 0.8 ? '太棒了！' :
-               score >= questions.length * 0.6 ? '继续加油！' : '再练习一下吧！'}
-            </Text>
+            <Text className="result-desc">{praise}</Text>
+            <Text className="result-desc">正确率：{scorePercent}%</Text>
             <View className="result-actions">
-              <View className="action-btn secondary" onClick={startPractice}>再练一次</View>
+              <View className="action-btn secondary" onClick={reset}>再练一次</View>
               <View className="action-btn" onClick={() => Taro.navigateBack()}>返回</View>
             </View>
           </View>
@@ -351,25 +179,23 @@ function Vocabulary() {
 
   return (
     <View className="vocabulary-page">
-      {/* 进度条 */}
-      <View className="progress-bar">
-        <View
-          className="progress-fill"
-          style={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
-        />
-      </View>
+      <View className="content-scroll">
+        {/* 进度条 */}
+        <View className="progress-bar">
+          <View className="practice-progress-fill" style={{ width: `${progress.percent}%` }}></View>
+        </View>
 
-      <ScrollView scrollY className="content-scroll">
         {/* 题目卡片 */}
         <View className="question-card">
           <View className="question-header">
-            <Text className="question-num">第 {currentIndex + 1} / {questions.length} 题</Text>
-            <View className="question-tag">词汇学习</View>
-            <View
-              className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
-              onClick={handleToggleFavorite}
-            >
-              <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
+            <View className="question-num">第 {progress.current} / {progress.total} 题</View>
+            <View className="question-actions">
+              <View
+                className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
+                onClick={toggleFavorite}
+              >
+                <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
+              </View>
             </View>
           </View>
 
@@ -379,20 +205,36 @@ function Vocabulary() {
 
           {/* 选项列表 */}
           <View className="options-list">
-            {currentQuestion?.options.map((option, index) => {
+            {currentQuestion?.options?.map((option, index) => {
               const isSelected = selectedAnswer === index
               const isCorrect = index === currentQuestion.correctAnswer
-              const showCorrect = showResult && isCorrect
+              const showIcon = showResult && (isCorrect || isSelected)
 
               return (
                 <View
                   key={index}
-                  className={`option-item ${isSelected ? (isCorrect ? 'correct' : 'wrong') : ''} ${showCorrect ? 'correct' : ''}`}
-                  onClick={() => handleAnswer(index)}
+                  className={`option-item ${isSelected ? 'selected' : ''} ${
+                    showResult && isCorrect ? 'correct' : ''
+                  } ${showResult && isSelected && !isCorrect ? 'wrong' : ''
+                  }`}
+                  onClick={() => selectAnswer(index)}
                 >
-                  <Text className="option-text">{option}</Text>
-                  {showCorrect && <Text className="option-icon">✓</Text>}
-                  {isSelected && !isCorrect && <Text className="option-icon">×</Text>}
+                  <View className="option-label">
+                    <Text className="option-label-text">{String.fromCharCode(65 + index)}</Text>
+                  </View>
+                  <View className="option-content">
+                    <Text className="option-text">{option}</Text>
+                  </View>
+                  {showIcon && isCorrect && (
+                    <View className="option-icon">
+                      <Text className="icon-check">✓</Text>
+                    </View>
+                  )}
+                  {showIcon && isSelected && !isCorrect && (
+                    <View className="option-icon">
+                      <Text className="icon-cross">✗</Text>
+                    </View>
+                  )}
                 </View>
               )
             })}
@@ -401,19 +243,24 @@ function Vocabulary() {
           {/* 解析 */}
           {showResult && currentQuestion?.explanation && (
             <View className="explanation-box">
-              <Text className="explanation-label">解析</Text>
+              <Text className="explanation-label">解析：</Text>
               <Text className="explanation-text">{currentQuestion.explanation}</Text>
             </View>
           )}
+        </View>
 
-          {/* 下一题按钮 */}
-          {showResult && (
-            <View className="next-btn" onClick={handleNext}>
-              <Text>{currentIndex < questions.length - 1 ? '下一题' : '查看结果'}</Text>
+        {/* 底部操作栏 */}
+        <View className="practice-actions">
+          <View className="practice-btn secondary" onClick={() => Taro.navigateBack()}>返回</View>
+          {showResult ? (
+            <View className="practice-btn" onClick={nextQuestion}>
+              {currentIndex < questions.length - 1 ? '下一题' : '完成'}
             </View>
+          ) : (
+            <View className="practice-btn disabled">请选择答案</View>
           )}
         </View>
-      </ScrollView>
+      </View>
     </View>
   )
 }
