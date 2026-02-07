@@ -1,0 +1,44 @@
+/**
+ * Empty 组件样式
+ */
+@import '../../../styles/variables.less';
+
+.empty-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: @spacing-xxl @spacing-xl;
+  min-height: 300px;
+}
+
+.empty-icon {
+  font-size: 80px;
+  margin-bottom: @spacing-lg;
+  opacity: 0.5;
+}
+
+.empty-image {
+  width: 160px;
+  height: 160px;
+  margin-bottom: @spacing-lg;
+  opacity: 0.6;
+}
+
+.empty-text {
+  font-size: @font-size-base;
+  color: @text-color-secondary;
+  margin-bottom: @spacing-sm;
+}
+
+.empty-desc {
+  font-size: @font-size-sm;
+  color: @text-color-tertiary;
+  text-align: center;
+  max-width: 400px;
+  margin-bottom: @spacing-lg;
+}
+
+.empty-action {
+  margin-top: @spacing-md;
+}

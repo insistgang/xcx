@@ -1,0 +1,154 @@
+/**
+ * QuestionCard 组件样式
+ */
+@import '../../../styles/variables.less';
+
+.question-card {
+  background: @white;
+  border-radius: @radius-lg;
+  padding: @spacing-xl;
+  box-shadow: @shadow-sm;
+  margin-bottom: @spacing-md;
+}
+
+// 题目头部
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: @spacing-lg;
+}
+
+.question-progress {
+  font-size: @font-size-sm;
+  color: @text-color-secondary;
+  font-weight: @font-weight-medium;
+}
+
+.question-favorite {
+  font-size: 48px;
+  color: @border-color;
+  transition: @transition-base;
+
+  &.favorited {
+    color: #FFB84D;
+  }
+
+  .favorite-icon {
+    font-size: inherit;
+  }
+}
+
+// 题目内容
+.question-content {
+  margin-bottom: @spacing-xl;
+}
+
+.question-text {
+  font-size: @font-size-base;
+  color: @text-color-primary;
+  line-height: 1.6;
+  font-weight: @font-weight-medium;
+}
+
+// 选项列表
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: @spacing-sm;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  min-height: 88px;
+  padding: @spacing-lg;
+  background: @bg-color;
+  border-radius: @radius-md;
+  border: 2px solid transparent;
+  transition: @transition-base;
+
+  &:active {
+    background: @bg-hover;
+  }
+}
+
+.option-selected {
+  border-color: @primary-color;
+  background: @primary-lighter;
+}
+
+.option-correct {
+  border-color: @success-color;
+  background: @success-light;
+}
+
+.option-wrong {
+  border-color: @danger-color;
+  background: @danger-light;
+}
+
+.option-label {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: @white;
+  border-radius: @radius-sm;
+  margin-right: @spacing-md;
+  flex-shrink: 0;
+
+  .option-label-text {
+    font-size: @font-size-sm;
+    font-weight: @font-weight-semibold;
+    color: @text-color-primary;
+  }
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-text {
+  font-size: @font-size-base;
+  color: @text-color-primary;
+  line-height: 1.5;
+}
+
+.option-icon {
+  margin-left: @spacing-sm;
+  flex-shrink: 0;
+
+  .icon-check {
+    font-size: 40px;
+    color: @success-color;
+  }
+
+  .icon-cross {
+    font-size: 40px;
+    color: @danger-color;
+  }
+}
+
+// 解析
+.question-explanation {
+  margin-top: @spacing-xl;
+  padding: @spacing-lg;
+  background: @primary-lighter;
+  border-radius: @radius-md;
+  border-left: 4px solid @primary-color;
+}
+
+.explanation-label {
+  font-size: @font-size-sm;
+  color: @primary-color;
+  font-weight: @font-weight-semibold;
+  margin-right: @spacing-xs;
+}
+
+.explanation-text {
+  font-size: @font-size-sm;
+  color: @text-color-primary;
+  line-height: 1.6;
+}
