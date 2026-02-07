@@ -145,11 +145,20 @@ const finishPractice = async () => {
 
 **Important:** `console.log` is stripped in production builds. Use `Taro.showToast` for debugging that persists.
 
+### Answer History and Wrong Questions
+
+**Critical Pattern**: The `answer_history` collection stores individual answers with full question context:
+- `questionId`, `answer`, `isCorrect`, `questionType` are always saved
+- For practice questions not in `questions_bank` (vocabulary, idiom, etc.), `submitBatchAnswers` accepts pre-calculated `isCorrect` and `questionType`
+- The function also saves `questionText`, `options`, `correctAnswer` when provided for offline/错题 display
+- Wrong questions are fetched from `answer_history` where `isCorrect: false`, with full question data reconstructed from either `questions_bank` or saved fields
+
 ### Database Collections
 
 | Collection | Purpose | Permissions |
 |------------|---------|-------------|
-| users | User profiles | Owner read/write |
+| users | User profiles (openid field, not _openid) | Owner read/write |
+| admins | Admin users for admin features | Private |
 | questions_bank | Question bank (5000+ K12 questions) | Public read |
 | study_records | Learning session summaries | Owner read/write |
 | answer_history | Individual answer records | Owner read/write |
@@ -169,8 +178,12 @@ const finishPractice = async () => {
 - `exercise-detail` - Generic practice detail page (supports `mode=wrong`, `mode=favorite`)
 - `wrong-practice` - Shows错题 from `answer_history`
 - `favorite-practice` - Shows favorited questions
+- `mock-exam` - Mock exam with timer, answer sheet, auto-submit
+- `exam-result` - Exam result page
 - `study-record`/`study-report`/`study-analysis` - Learning statistics
 - `admin`/`admin/user-detail` - Admin pages (admin check in cloud function)
+- `admin-import` - Data import management
+- `admin-manage` - Admin management (add/remove admins)
 
 ### Important Constants
 
@@ -193,23 +206,51 @@ From `src/utils/constants.js`:
 **question 云函数:**
 | action | params | returns |
 |--------|--------|--------|
-| random | count, type, difficulty | Random questions |
-| list | type, page, pageSize | Questions by type |
+| random | count, type, difficulty | Random questions (uses Fisher-Yates shuffle) |
+| list | type, page, pageSize, difficulty | Questions by type |
+| detail | id | Question detail |
+| submit | questionId, answer | Submit single answer |
 | submitBatch | answers[] | Save multiple answers to answer_history |
-| wrong | page, pageSize | Get wrong questions |
+| stats | - | User answer statistics |
+| types | - | Available question types with counts |
+| favorite | questionId, questionData | Toggle favorite |
 | favorites | page, pageSize | Get favorited questions |
+| wrong | page, pageSize | Get wrong questions |
 | removeWrong | questionId | Remove from wrong answers |
+| practice | type, count, difficulty | Generate practice set |
+| achievements | - | User achievements |
 | adminCheck | - | Verify admin status |
 | adminStats | - | Global statistics |
 | adminUserList | page, pageSize | User list for admin |
+| adminUserDetail | targetOpenid | User detail for admin |
 
 **study 云函数:**
 | action | params | returns |
 |--------|--------|--------|
-| getRecords | - | User's study records |
-| addRecord | type, score, totalQuestions, etc. | Save study session |
-| getReport | - | Generate study report |
-| getAnalysis | - | Learning analysis |
+| add | type, score, totalQuestions, etc. | Save single study record |
+| addBatch | records[] | Save multiple study records |
+| list | type, page, pageSize | User's study records |
+| statistics | timeRange | Study statistics |
+| homeStats | - | Homepage statistics (today's data, streak) |
+| report | startDate, endDate | Study report |
+| analysis | - | Learning analysis (strong/weak points) |
+| delete | id | Delete study record |
+| calendar | year, month | Study calendar data |
+
+**import-data 云函数:**
+| action | params | returns |
+|--------|--------|--------|
+| importBatch | type, startIndex, batchSize | Batch import embedded data |
+| clearCollection | collection | Clear collection |
+| checkStatus | - | Check import status |
+| getTotal | - | Get total data counts |
+
+**admin-manage 云函数:**
+| action | params | returns |
+|--------|--------|--------|
+| addAdmin | targetOpenid | Add admin |
+| removeAdmin | targetOpenid | Remove admin |
+| listAdmins | - | List admins |
 
 ### Critical Development Notes
 
@@ -220,6 +261,9 @@ From `src/utils/constants.js`:
 5. **Practice Pages Must Save Answers**: Each practice page must call `question` cloud function with `action: 'submitBatch'` to save individual answers to `answer_history`
 6. **Event Bus Cleanup**: Always return unsubscribe function from `eventBus.on()` in useEffect cleanup
 7. **No Fake Data**: Services return empty arrays/objects on failure, not mock data
+8. **UTC Time Handling**: Cloud functions use `db.serverDate()` which returns UTC timestamps; always use UTC methods (`getUTCFullYear()`, `getUTCMonth()`, etc.) for date comparisons
+9. **users Collection Field**: The `users` collection uses `openid` field (not `_openid`), while answer_history, study_records, favorites use `_openid` (auto-added by cloud)
+10. **Random Question Selection**: Uses Fisher-Yates shuffle algorithm for true randomization; fetches all matching questions then shuffles
 
 ### Recent Bug Fixes (2025-01)
 
@@ -234,3 +278,9 @@ From `src/utils/constants.js`:
 
 **Navigation:**
 - Chat page navigation uses `switchTab` instead of `navigateTo` (it's a TabBar page)
+
+**Data Import:**
+- `import-data` cloud function has embedded vocabulary (200+ words) and idiom (100+ idioms) data
+- Uses batch processing (20 items per batch) to avoid timeout
+- Supports `importBatch`, `clearCollection`, `checkStatus`, `getTotal` actions
+- For mock exam questions, uses `require('./mock-exam-questions-full.js')` if file exists
