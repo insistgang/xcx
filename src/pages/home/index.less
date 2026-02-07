@@ -1,23 +1,15 @@
 /**
  * 首页样式 - AI 语文助手（精美版）
+ * 使用全局设计 Token
  */
 @import '../../styles/variables.less';
 
-// 配色变量
-@color-blue: #4A90E2;
-@color-blue-light: #63B3ED;
-@color-green: #10B981;
-@color-green-light: #34D399;
-@color-orange: #F59E0B;
-@color-orange-light: #FBBF24;
-@color-red: #EF4444;
-@color-purple: #667eea;
-@color-purple-dark: #764ba2;
-@color-yellow: #FBBF24;
+// 使用全局设计 token，移除本地颜色变量
+// 颜色引用: @primary-color, @success-color, @warning-color, @info-color, @orange-color
 
 .home-page {
   min-height: 100vh;
-  background: #F5F7FA;
+  background: @bg-color;
 }
 
 .content-scroll {
@@ -28,7 +20,7 @@
 // 头部区域 - 蓝色渐变背景
 // ============================================
 .header-section {
-  background: linear-gradient(135deg, #4A90E2 0%, #63B3ED 100%);
+  background: @primary-gradient;
   padding: 60rpx 32rpx 32rpx;
   position: relative;
   overflow: hidden;
@@ -80,7 +72,7 @@
   align-items: center;
   justify-content: center;
   border: 4rpx solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+  box-shadow: @shadow-primary;
 }
 
 .avatar-text {
@@ -94,7 +86,7 @@
   height: 120rpx;
   border-radius: 50%;
   border: 4rpx solid rgba(255, 255, 255, 0.4);
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+  box-shadow: @shadow-primary;
 }
 
 // 右侧问候
@@ -128,7 +120,7 @@
   align-self: flex-start;
   position: relative;
   z-index: 1;
-  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.1);
+  box-shadow: @shadow-primary;
 }
 
 .days-icon {
@@ -159,7 +151,7 @@
   display: flex;
   align-items: center;
   justify-content: space-around;
-  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.08);
+  box-shadow: @shadow-md;
 }
 
 .stat-item {
@@ -176,27 +168,27 @@
   font-family: 'DIN Alternate', sans-serif;
 
   .stat-blue & {
-    color: @color-blue;
+    color: @primary-color;
   }
 
   .stat-orange & {
-    color: @color-orange;
+    color: @warning-color;
   }
 
   .stat-green & {
-    color: @color-green;
+    color: @success-color;
   }
 }
 
 .stat-label {
   font-size: 24rpx;
-  color: #999;
+  color: @text-color-tertiary;
 }
 
 .stat-divider {
   width: 1rpx;
   height: 60rpx;
-  background: #E5E7EB;
+  background: @border-color;
 }
 
 // ============================================
@@ -216,12 +208,12 @@
 .section-title {
   font-size: 36rpx;
   font-weight: 600;
-  color: #1F2937;
+  color: @text-color-primary;
 }
 
 .section-more {
   font-size: 28rpx;
-  color: #9CA3AF;
+  color: @text-color-tertiary;
 }
 
 // ============================================
@@ -240,14 +232,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  box-shadow: @shadow-sm;
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
 
   &:active {
     transform: translateY(-4rpx);
-    box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.12);
+    box-shadow: @shadow-lg;
   }
 
   // 顶部彩色条
@@ -259,19 +251,19 @@
     height: 8rpx;
 
     .module-blue & {
-      background: linear-gradient(90deg, @color-blue, @color-blue-light);
+      background: @primary-gradient;
     }
 
     .module-orange & {
-      background: linear-gradient(90deg, @color-orange, @color-orange-light);
+      background: @warning-gradient;
     }
 
     .module-green & {
-      background: linear-gradient(90deg, @color-green, @color-green-light);
+      background: @success-gradient;
     }
 
     .module-yellow & {
-      background: linear-gradient(90deg, @color-yellow, @color-orange-light);
+      background: @warning-gradient;
     }
   }
 }
@@ -284,13 +276,13 @@
 .module-name {
   font-size: 32rpx;
   font-weight: 600;
-  color: #1F2937;
+  color: @text-color-primary;
   margin-bottom: 8rpx;
 }
 
 .module-desc {
   font-size: 24rpx;
-  color: #9CA3AF;
+  color: @text-color-tertiary;
   text-align: center;
 }
 
@@ -304,7 +296,7 @@
 }
 
 .quick-item {
-  background: #F9FAFB;
+  background: @bg-hover;
   border-radius: 16rpx;
   padding: 24rpx 16rpx;
   display: flex;
@@ -314,7 +306,7 @@
 
   &:active {
     transform: scale(0.95);
-    background: #F3F4F6;
+    background: @bg-tertiary;
   }
 }
 
@@ -328,12 +320,12 @@
   font-size: 40rpx;
   margin-bottom: 12rpx;
   background: #fff;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.06);
+  box-shadow: @shadow-xs;
 }
 
 .quick-name {
   font-size: 24rpx;
-  color: #4B5563;
+  color: @text-color-secondary;
   text-align: center;
 }
 
@@ -347,7 +339,7 @@
 }
 
 .quote-card {
-  background: linear-gradient(135deg, @color-purple 0%, @color-purple-dark 100%);
+  background: @info-gradient;
   border-radius: 24rpx;
   padding: 48rpx 40rpx;
   display: flex;
@@ -356,7 +348,7 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 12rpx 40rpx rgba(102, 126, 234, 0.3);
+  box-shadow: @shadow-info;
 
   // 装饰性背景
   &::before {
