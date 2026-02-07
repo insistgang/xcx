@@ -2,7 +2,7 @@
  * 词汇学习页面 - 选择题模式
  * 使用 usePractice Hook 重构，代码量大幅减少
  */
-import { useRef } from 'react'
+import React from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
 import { usePractice } from '../../hooks/usePractice'

@@ -14,6 +14,7 @@ import Taro from '@tarojs/taro'
 import studyService from '../services/study'
 import questionService from '../question'
 import eventBus, { EVENTS } from '../utils/eventBus'
+import { ErrorHandler, ErrorTypes } from '../utils/errorHandler'
 
 // 收藏状态缓存（跨实例共享）
 let FAVORITES_CACHE = new Set()
@@ -73,7 +74,7 @@ export const usePractice = ({
       FAVORITES_CACHE = new Set(favorites.map(f => f.id || f._id))
       updateFavoriteStatus()
     } catch (err) {
-      console.error('加载收藏失败:', err)
+      ErrorHandler.handleCloudFunctionError(err, 'getFavorites', { showTip: false })
     }
   }, [])
 
@@ -120,8 +121,7 @@ export const usePractice = ({
         })
       }
     } catch (err) {
-      console.error('收藏失败:', err)
-      Taro.showToast({ title: '操作失败', icon: 'none' })
+      ErrorHandler.handleCloudFunctionError(err, '收藏')
     } finally {
       setFavoriteLoading(false)
     }
@@ -192,10 +192,9 @@ export const usePractice = ({
 
       const result = submitResult.result || submitResult || {}
       const saved = result.savedCount ?? result.data?.savedCount ?? 0
-      console.log(`答题历史已保存: ${saved}/${answerData.length}`)
+      // 答题历史已保存，数量: ${saved}/${answerData.length}
     } catch (err) {
-      console.error('保存答题历史失败:', err)
-      Taro.showToast({ title: '保存失败，请重试', icon: 'none', duration: 2000 })
+      ErrorHandler.handleCloudFunctionError(err, 'question/submitBatch')
     }
 
     // 保存学习记录到 study_records
@@ -227,7 +226,7 @@ export const usePractice = ({
         })
       }
     } catch (err) {
-      console.error('保存学习记录失败:', err)
+      ErrorHandler.handleCloudFunctionError(err, 'study/addRecord')
     }
   }, [questions, score, practiceType, onComplete])
 
