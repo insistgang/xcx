@@ -12,7 +12,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useDidShow } from '@tarojs/taro'
 import Taro from '@tarojs/taro'
 import studyService from '../services/study'
-import questionService from '../question'
+import questionService from '../services/question'
 import eventBus, { EVENTS } from '../utils/eventBus'
 import { ErrorHandler, ErrorTypes } from '../utils/errorHandler'
 

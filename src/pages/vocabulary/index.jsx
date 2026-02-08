@@ -96,7 +96,7 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v075', type: 'understand', question: '"心旷神怡"形容：', options: ['A. 心情舒畅', 'B. 精神愉快', 'C. 心胸开阔，精神愉快', 'D. 高兴'], correctAnswer: 2, explanation: '"心旷神怡"形容心胸开阔，精神愉快。' },
   { id: 'v076', type: 'understand', question: '"赏心悦目"形容：', options: ['A. 看着舒服', 'B. 因欣赏美好景物而心情舒畅', 'C. 美好', 'D. 悦目'], correctAnswer: 1, explanation: '"赏心悦目"形容因欣赏美好的景物而心情舒畅。' },
   { id: 'v077', type: 'understand', question: '"心花怒放"形容：', options: ['A. 高兴', 'B. 极其高兴', 'C. 开心', 'D. 兴奋'], correctAnswer: 1, explanation: '"心花怒放"形容极其高兴。' },
-  { id: 'v078', type: 'understand', question: '"欣喜若狂"的意思是：', options: ['A. 高兴得发狂', 'B. 高兴到了极点', 'C. 狂喜', 'D''], correctAnswer: 1, explanation: '"欣喜若狂"形容高兴到了极点。' },
+  { id: 'v078', type: 'understand', question: '"欣喜若狂"的意思是：', options: ['A. 高兴得发狂', 'B. 高兴到了极点', 'C. 狂喜', 'D. 狂喜不已'], correctAnswer: 1, explanation: '"欣喜若狂"形容高兴到了极点。' },
   { id: 'v079', type: 'understand', question: '"心平气和"形容：', options: ['A. 平静', 'B. 心情平静，态度温和', 'C. 和气', 'D. 冷静'], correctAnswer: 1, explanation: '"心平气和"形容心情平静，态度温和。' },
   { id: 'v080', type: 'understand', question: '"从容不迫"的意思是：', options: ['A. 不慌不忙', 'B. 非常镇静，不慌不忙', 'C. 冷静', 'D. 沉着'], correctAnswer: 1, explanation: '"从容不迫"形容非常镇静，不慌不忙。' }
 ]

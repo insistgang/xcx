@@ -5,8 +5,8 @@
 import React, { useCallback } from 'react'
 import { View, Text } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { usePractice } from '../../hooks/usePractice'
-import { pageShareConfigs } from '../../utils/share'
+import { usePractice } from '../../../hooks/usePractice'
+import { pageShareConfigs } from '../../../utils/share'
 import './PracticePage.less'
 
 function PracticePage({
