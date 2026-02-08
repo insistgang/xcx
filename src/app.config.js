@@ -68,6 +68,24 @@ export default {
   },
 
   cloud: true,
+
+  // 全局分享配置
+  onShareAppMessage() {
+    return {
+      title: 'AI语文助手 - 智能学习，高效提升',
+      path: '/pages/home/index',
+      imageUrl: ''
+    }
+  },
+
+  onShareTimeline() {
+    return {
+      title: 'AI语文助手 - 智能学习，高效提升',
+      query: '',
+      imageUrl: ''
+    }
+  },
+
   permission: {
     'scope.userLocation': {
       desc: '你的位置信息将用于小程序位置接口的效果展示'

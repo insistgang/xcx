@@ -21,7 +21,13 @@ if (process.env.TARO_ENV === 'weapp') {
 function App({ children }) {
 
   useLaunch(() => {
-    // App launched
+    // 显示分享菜单（启用转发给好友和分享到朋友圈）
+    if (process.env.TARO_ENV === 'weapp') {
+      Taro.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline']
+      })
+    }
   })
 
   return (
