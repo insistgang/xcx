@@ -79,6 +79,8 @@ function IdiomPage() {
       practiceType="idiom"
       shareConfig={pageShareConfigs.idiom}
       pageClassName="idiom-page"
+      useCloud={true}
+      count={20}
     />
   )
 }

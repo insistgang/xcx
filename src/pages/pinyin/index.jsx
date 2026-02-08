@@ -102,6 +102,8 @@ function PinyinPage() {
       practiceType="pinyin"
       shareConfig={pageShareConfigs.pinyin}
       pageClassName="pinyin-page"
+      useCloud={true}
+      count={20}
     />
   )
 }

@@ -95,6 +95,8 @@ function CorrectionPage() {
       practiceType="correction"
       shareConfig={pageShareConfigs.correction}
       pageClassName="correction-page"
+      useCloud={true}
+      count={20}
     />
   )
 }

@@ -108,6 +108,8 @@ function VocabularyPage() {
       practiceType="vocabulary"
       shareConfig={pageShareConfigs.vocabulary}
       pageClassName="vocabulary-page"
+      useCloud={true}
+      count={20}
     />
   )
 }
