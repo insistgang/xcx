@@ -76,12 +76,7 @@ function Home() {
 
   // 启用页面分享
   useShareAppMessage(() => {
-    return {
-      ...pageShareConfigs.home,
-      success: () => {
-        console.log('分享成功')
-      }
-    }
+    return pageShareConfigs.home
   })
 
   // 启用朋友圈分享

@@ -299,8 +299,6 @@ function MockExam() {
       const questions = await questionService.getRandomQuestions(50)
 
       if (questions && questions.length > 0) {
-        console.log('从数据库加载模拟考试题目数量:', questions.length)
-
         // 将数据库题目格式转换为页面需要的格式
         const examQuestions = questions.map((q) => ({
           id: q._id || q.id,
@@ -315,7 +313,6 @@ function MockExam() {
         setLoading(false)
       } else {
         // 如果数据库没有题目，使用本地备用题目
-        console.log('数据库暂无题目，使用本地备用题目')
         loadLocalQuestions()
       }
     } catch (err) {
@@ -336,7 +333,6 @@ function MockExam() {
     }
 
     const examQuestions = shuffled.slice(0, 50)
-    console.log('使用本地备用题目数量:', examQuestions.length)
     setQuestions(examQuestions)
     setLoading(false)
   }

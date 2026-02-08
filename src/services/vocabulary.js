@@ -152,7 +152,7 @@ class VocabularyService {
       })
       if (res.data) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据
@@ -172,7 +172,7 @@ class VocabularyService {
       })
       if (res.data && res.data.length > 0) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据
@@ -190,7 +190,7 @@ class VocabularyService {
       })
       if (res.data && res.data.length > 0) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据（随机打乱）
@@ -209,7 +209,7 @@ class VocabularyService {
       })
       if (res.data && res.data.length > 0) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据
@@ -227,7 +227,7 @@ class VocabularyService {
       })
       if (res.data && res.data.length > 0) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据搜索
@@ -249,7 +249,7 @@ class VocabularyService {
       })
       if (res.data) return res.data
     } catch (err) {
-      console.log('使用本地数据')
+      console.error('使用本地数据:', err)
     }
 
     // 使用本地模拟数据

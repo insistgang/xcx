@@ -1,0 +1,302 @@
+.practice-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.practice-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 32px;
+  color: #999;
+}
+
+.content-scroll {
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* 进度条 */
+.progress-bar {
+  width: 100%;
+  height: 8rpx;
+  background: #e0e0e0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #5B9BD5 0%, #7BC4EA 100%);
+  transition: width 0.3s ease;
+}
+
+/* 题目卡片 */
+.question-card {
+  margin: 24rpx;
+  padding: 32rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.question-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.question-num {
+  font-size: 28rpx;
+  color: #666;
+  font-weight: 500;
+}
+
+.question-actions {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.favorite-btn {
+  padding: 8rpx 16rpx;
+  border-radius: 8rpx;
+  border: 1rpx solid #e0e0e0;
+  transition: all 0.3s ease;
+}
+
+.favorite-btn.favorited {
+  background: #fff5e6;
+  border-color: #ff9500;
+}
+
+.favorite-btn.loading {
+  opacity: 0.6;
+}
+
+.favorite-icon {
+  font-size: 36rpx;
+  color: #999;
+}
+
+.favorite-btn.favorited .favorite-icon {
+  color: #ff9500;
+}
+
+.question-content {
+  margin-bottom: 32rpx;
+}
+
+.question-text {
+  font-size: 32rpx;
+  line-height: 1.6;
+  color: #333;
+  font-weight: 500;
+}
+
+/* 选项列表 */
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  min-height: 88rpx;
+  padding: 16rpx 24rpx;
+  background: #f8f8f8;
+  border-radius: 12rpx;
+  border: 2rpx solid transparent;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.option-item.selected {
+  background: #e3f2fd;
+  border-color: #5B9BD5;
+}
+
+.option-item.correct {
+  background: #e8f5e9;
+  border-color: #6fcf97;
+}
+
+.option-item.wrong {
+  background: #ffebee;
+  border-color: #ff6b6b;
+}
+
+.option-label {
+  flex-shrink: 0;
+  width: 56rpx;
+  height: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16rpx;
+  background: #fff;
+  border-radius: 8rpx;
+}
+
+.option-label-text {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #5B9BD5;
+}
+
+.option-content {
+  flex: 1;
+}
+
+.option-text {
+  font-size: 30rpx;
+  line-height: 1.5;
+  color: #333;
+}
+
+.option-icon {
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.icon-check {
+  color: #6fcf97;
+}
+
+.icon-cross {
+  color: #ff6b6b;
+}
+
+/* 解析框 */
+.explanation-box {
+  margin-top: 24rpx;
+  padding: 24rpx;
+  background: #f8f9fa;
+  border-radius: 12rpx;
+  border-left: 4rpx solid #5B9BD5;
+}
+
+.explanation-label {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #5B9BD5;
+  margin-bottom: 8rpx;
+  display: block;
+}
+
+.explanation-text {
+  font-size: 28rpx;
+  line-height: 1.6;
+  color: #666;
+}
+
+/* 底部操作栏 */
+.practice-actions {
+  display: flex;
+  gap: 16rpx;
+  padding: 24rpx;
+  position: sticky;
+  bottom: 0;
+  background: #fff;
+  border-top: 1rpx solid #e0e0e0;
+}
+
+.practice-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 12rpx;
+  background: #5B9BD5;
+  color: #fff;
+  transition: opacity 0.3s ease;
+}
+
+.practice-btn.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.practice-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 结果页面 */
+.result-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 32rpx;
+}
+
+.result-card {
+  width: 100%;
+  max-width: 560rpx;
+  padding: 64rpx 48rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+  text-align: center;
+}
+
+.result-title {
+  display: block;
+  font-size: 48rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.result-score {
+  display: block;
+  font-size: 72rpx;
+  font-weight: 700;
+  color: #5B9BD5;
+  margin-bottom: 16rpx;
+}
+
+.result-desc {
+  display: block;
+  font-size: 30rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+.result-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 48rpx;
+}
+
+.action-btn {
+  flex: 1;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32rpx;
+  font-weight: 500;
+  border-radius: 12rpx;
+}
+
+.action-btn.secondary {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.action-btn:not(.secondary) {
+  background: #5B9BD5;
+  color: #fff;
+}

@@ -42,7 +42,6 @@ function Profile() {
     // 检查管理员权限
     const adminStatus = await adminService.checkAdmin()
     setIsAdmin(adminStatus)
-    console.log('管理员状态:', adminStatus)
   })
 
   // 监听学习记录更新事件（实现实时统计刷新）

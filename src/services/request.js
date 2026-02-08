@@ -39,7 +39,6 @@ export const callCloudFunction = async (name, data = {}, options = {}) => {
     return res.result
   } catch (err) {
     // 静默处理错误，不显示 toast，让上层服务处理 fallback
-    console.log(`云函数 ${name} 调用失败，将使用本地数据:`, err.message || err)
     throw err
   }
 }

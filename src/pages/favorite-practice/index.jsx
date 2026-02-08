@@ -37,7 +37,6 @@ function FavoritePractice() {
    * 当练习记录更新时，刷新已练习计数
    */
   const handleStudyRecordUpdated = (data) => {
-    console.log('=== 收到练习记录更新事件 ===', data)
     // 重新加载收藏列表来更新计数
     loadFavoriteQuestions()
   }
@@ -60,7 +59,6 @@ function FavoritePractice() {
       const practicedIds = new Set(answerRecords.map(r => r.questionId))
       PRACTICED_FAVORITES_CACHE = practicedIds
 
-      console.log('=== 已练习的收藏题目 ===', practicedIds)
       return practicedIds.size
     } catch (err) {
       console.error('获取已练习记录失败:', err)
@@ -71,9 +69,7 @@ function FavoritePractice() {
   const loadFavoriteQuestions = async () => {
     setLoading(true)
     try {
-      console.log('=== 开始获取收藏题目 ===')
       const data = await questionService.getFavorites(1, 100)
-      console.log('=== getFavorites 返回数据 ===', data)
 
       const favoriteIds = (data || []).map(q => q.id || q._id)
       const total = favoriteIds.length
@@ -84,7 +80,7 @@ function FavoritePractice() {
       setQuestions(data || [])
       setStats({ total, practiced })
     } catch (err) {
-      console.error('=== 加载收藏失败 ===', err)
+      console.error('加载收藏失败:', err)
       setQuestions([])
     } finally {
       setLoading(false)

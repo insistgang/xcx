@@ -1,14 +1,8 @@
 /**
- * 成语学习页面 - 选择题模式
- * 使用 usePractice Hook 重构，代码量大幅减少
+ * 成语学习页面 - 使用通用练习组件
  */
-import React from 'react'
-import { View, Text, ScrollView } from '@tarojs/components'
-import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { usePractice } from '../../hooks/usePractice'
-import eventBus, { EVENTS } from '../../utils/eventBus'
+import PracticePage from '../../components/common/PracticePage'
 import { pageShareConfigs } from '../../utils/share'
-import './index.less'
 
 // 成语选择题库（100题精选）
 const IDIOM_QUESTIONS = [
@@ -78,162 +72,15 @@ const IDIOM_QUESTIONS = [
   { id: 'i100', type: 'relation', question: '"垂头丧气"的近义词是：', options: ['A. 灰心丧气', 'B. 没精打采', 'C. 垂头丧气', 'D. 丧气'], correctAnswer: 1, explanation: '"垂头丧气"的近义词是"没精打采"。' }
 ]
 
-function Idiom() {
-  const {
-    questions,
-    currentIndex,
-    selectedAnswer,
-    showResult,
-    score,
-    completed,
-    isFavorited,
-    favoriteLoading,
-    loading,
-    currentQuestion,
-    progress,
-    startPractice,
-    toggleFavorite,
-    selectAnswer,
-    nextQuestion,
-    reset,
-  } = usePractice({
-    questionsData: IDIOM_QUESTIONS,
-    practiceType: 'idiom',
-  })
-
-  // 页面生命周期
-  useDidShow(() => {
-    startPractice()
-  })
-
-  // 启用页面分享
-  useShareAppMessage(() => {
-    return pageShareConfigs.idiom
-  })
-
-  useShareTimeline(() => {
-    return {
-      title: pageShareConfigs.idiom.title,
-      query: ''
-    }
-  })
-
-  if (loading || questions.length === 0) {
-    return (
-      <View className="idiom-page">
-        <View className="practice-loading">加载中...</View>
-      </View>
-    )
-  }
-
-  if (completed) {
-    const scorePercent = Math.round((score / questions.length) * 100)
-    const praise = scorePercent >= 80 ? '太棒了！' : scorePercent >= 60 ? '继续加油！' : '再练习一下吧！'
-
-    return (
-      <View className="idiom-page">
-        <View className="result-page">
-          <View className="result-card">
-            <Text className="result-title">练习完成！</Text>
-            <Text className="result-score">{score} / {questions.length}</Text>
-            <Text className="result-desc">{praise}</Text>
-            <Text className="result-desc">正确率：{scorePercent}%</Text>
-            <View className="result-actions">
-              <View className="action-btn secondary" onClick={reset}>再练一次</View>
-              <View className="action-btn" onClick={() => Taro.navigateBack()}>返回</View>
-            </View>
-          </View>
-        </View>
-      </View>
-    )
-  }
-
+function IdiomPage() {
   return (
-    <View className="idiom-page">
-      <View className="content-scroll">
-        {/* 进度条 */}
-        <View className="progress-bar">
-          <View className="practice-progress-fill" style={{ width: `${progress.percent}%` }}></View>
-        </View>
-
-        {/* 题目卡片 */}
-        <View className="question-card">
-          <View className="question-header">
-            <View className="question-num">第 {progress.current} / {progress.total} 题</View>
-            <View className="question-actions">
-              <View
-                className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
-                onClick={toggleFavorite}
-              >
-                <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="question-content">
-            <Text className="question-text">{currentQuestion?.question}</Text>
-          </View>
-
-          {/* 选项列表 */}
-          <View className="options-list">
-            {currentQuestion?.options?.map((option, index) => {
-              const isSelected = selectedAnswer === index
-              const isCorrect = index === currentQuestion.correctAnswer
-              const showIcon = showResult && (isCorrect || isSelected)
-
-              return (
-                <View
-                  key={index}
-                  className={`option-item ${isSelected ? 'selected' : ''} ${
-                    showResult && isCorrect ? 'correct' : ''
-                  } ${showResult && isSelected && !isCorrect ? 'wrong' : ''
-                  }`}
-                  onClick={() => selectAnswer(index)}
-                >
-                  <View className="option-label">
-                    <Text className="option-label-text">{String.fromCharCode(65 + index)}</Text>
-                  </View>
-                  <View className="option-content">
-                    <Text className="option-text">{option}</Text>
-                  </View>
-                  {showIcon && isCorrect && (
-                    <View className="option-icon">
-                      <Text className="icon-check">✓</Text>
-                    </View>
-                  )}
-                  {showIcon && isSelected && !isCorrect && (
-                    <View className="option-icon">
-                      <Text className="icon-cross">✗</Text>
-                    </View>
-                  )}
-                </View>
-              )
-            })}
-          </View>
-
-          {/* 解析 */}
-          {showResult && currentQuestion?.explanation && (
-            <View className="explanation-box">
-              <Text className="explanation-label">解析：</Text>
-              <Text className="explanation-text">{currentQuestion.explanation}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* 底部操作栏 */}
-        <View className="practice-actions">
-          <View className="practice-btn secondary" onClick={() => Taro.navigateBack()}>返回</View>
-          {showResult ? (
-            <View className="practice-btn" onClick={nextQuestion}>
-              {currentIndex < questions.length - 1 ? '下一题' : '完成'}
-            </View>
-          ) : (
-            <View className="practice-btn disabled">请选择答案</View>
-          )}
-        </View>
-      </View>
-    </View>
+    <PracticePage
+      questionsData={IDIOM_QUESTIONS}
+      practiceType="idiom"
+      shareConfig={pageShareConfigs.idiom}
+      pageClassName="idiom-page"
+    />
   )
 }
 
-export default Idiom
+export default IdiomPage

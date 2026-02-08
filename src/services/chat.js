@@ -177,7 +177,7 @@ class ChatService {
 
       throw new Error(res?.message || '发送失败')
     } catch (err) {
-      console.log('云函数调用失败，使用本地知识库')
+      console.error('云函数调用失败，使用本地知识库:', err)
 
       // 使用本地知识库作为 fallback
       const localReply = this.findLocalAnswer(message)
@@ -212,7 +212,7 @@ class ChatService {
       })
       return res?.data || []
     } catch (err) {
-      console.log('获取云端历史失败，返回本地历史')
+      console.error('获取云端历史失败:', err)
       // 云端获取失败时返回本地历史
       return this.loadLocalHistory()
     }
@@ -246,7 +246,7 @@ class ChatService {
         conversationId
       })
     } catch (err) {
-      console.log('清空云端历史失败')
+      console.error('清空云端历史失败:', err)
     }
     // 同时清空本地历史
     this.clearLocalHistory()

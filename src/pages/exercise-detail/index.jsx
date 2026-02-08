@@ -526,12 +526,10 @@ function ExerciseDetail() {
       let data
       if (mode === 'single') {
         // 单题模式：直接显示传入的题目
-        console.log('=== 单题模式 ===')
         try {
           const questionDataStr = params.questionData
           if (questionDataStr) {
             const parsedQuestion = JSON.parse(decodeURIComponent(questionDataStr))
-            console.log('解析到的题目:', parsedQuestion)
             data = [normalizeQuestion(parsedQuestion)]
           } else {
             console.error('单题模式缺少 questionData 参数')
@@ -543,10 +541,8 @@ function ExerciseDetail() {
         }
       } else if (mode === 'favorite') {
         // 收藏练习模式：从云函数获取收藏的题目列表
-        console.log('=== 收藏练习模式，从云函数获取收藏题目 ===')
         try {
           const favoriteQuestions = await questionService.getFavorites(1, count)
-          console.log('从云函数获取到收藏题目:', favoriteQuestions?.length || 0, '题')
           if (favoriteQuestions && favoriteQuestions.length > 0) {
             // 标准化收藏题目数据格式
             data = favoriteQuestions.map(q => normalizeQuestion({
@@ -567,10 +563,8 @@ function ExerciseDetail() {
         }
       } else if (mode === 'wrong') {
         // 错题重做模式：从云函数获取真实的错题列表
-        console.log('=== 错题重做模式，从云函数获取错题 ===')
         try {
           const wrongQuestions = await questionService.getWrongQuestions(1, count)
-          console.log('从云函数获取到错题:', wrongQuestions?.length || 0, '题')
           if (wrongQuestions && wrongQuestions.length > 0) {
             // 标准化错题数据格式
             data = wrongQuestions.map(q => normalizeQuestion({
@@ -604,7 +598,6 @@ function ExerciseDetail() {
       if (data && data.length > 0 && mode !== 'wrong') {
         data = data.map(normalizeQuestion)
       }
-      console.log('成功加载题目，数量:', data?.length || 0, '模式:', mode, '类型:', type)
       setQuestions(data || [])
     } catch (err) {
       console.error('加载题目失败:', err)
@@ -621,24 +614,11 @@ function ExerciseDetail() {
 
   const currentQuestion = questions[currentIndex]
 
-  // 调试：打印当前题目信息
-  if (currentQuestion && mode === 'wrong') {
-    console.log('=== 当前错题信息 ===')
-    console.log('题目ID:', currentQuestion.id)
-    console.log('题目类型:', currentQuestion.type)
-    console.log('题目内容:', currentQuestion.question?.substring(0, 50))
-    console.log('选项数量:', currentQuestion.options?.length || 0)
-    console.log('选项示例:', currentQuestion.options?.[0])
-    console.log('完整题目数据:', currentQuestion)
-  }
-
   const handleAnswer = (value) => {
-    console.log('handleAnswer 被调用', { questionId: currentQuestion.id, value })
     const newAnswers = {
       ...answers,
       [currentQuestion.id]: value
     }
-    console.log('新答案状态', newAnswers)
     setAnswers(newAnswers)
   }
 
@@ -762,9 +742,6 @@ function ExerciseDetail() {
         }
       })
 
-      console.log('=== 提交答题数据 ===')
-      console.log('答题数据示例:', answerData[0])
-
       await Taro.cloud.callFunction({
         name: 'question',
         data: {
@@ -778,31 +755,21 @@ function ExerciseDetail() {
 
     // 如果是错题重做模式，将答对的题目从错题集中移除
     if (mode === 'wrong' && correctQuestionIds.length > 0) {
-      console.log('=== 错题重做模式，准备移除答对的题目 ===')
-      console.log('答对的题目ID:', correctQuestionIds)
-      console.log('当前 mode:', mode)
-
       try {
         // 逐个移除答对的错题
         for (const questionId of correctQuestionIds) {
-          console.log('正在移除错题:', questionId)
-          const res = await Taro.cloud.callFunction({
+          await Taro.cloud.callFunction({
             name: 'question',
             data: {
               action: 'removeWrong',
               questionId: questionId
             }
           })
-          console.log('移除结果:', res)
         }
-        console.log(`=== 成功移除 ${correctQuestionIds.length} 道错题 ===`)
       } catch (err) {
-        console.error('=== 移除错题失败 ===:', err)
+        console.error('移除错题失败:', err)
         Taro.showToast({ title: '移除失败: ' + (err.errMsg || err.message || 'unknown'), icon: 'none', duration: 3000 })
       }
-    } else {
-      console.log('=== 不是错题重做模式 或 没有答对的题目 ===')
-      console.log('mode:', mode, 'correctQuestionIds:', correctQuestionIds)
     }
   }
 

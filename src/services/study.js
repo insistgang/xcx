@@ -25,12 +25,10 @@ class StudyService {
    */
   async addRecord(data) {
     try {
-      console.log('[studyService] 调用 addRecord 云函数，数据:', data)
       const res = await callCloudFunction(CLOUD_FUNCTIONS.STUDY, {
         action: 'add',
         ...data
       })
-      console.log('[studyService] addRecord 云函数返回:', res)
 
       // 修复：返回完整响应，保留 success 标志
       // 云函数返回 { success: true, data: { _id: 'xxx', ... } }
@@ -57,7 +55,6 @@ class StudyService {
       })
       return res.data || []
     } catch (err) {
-      console.log('批量添加失败（本地模式）')
       return records.map(r => ({ ...r, id: Date.now() + Math.random() }))
     }
   }
@@ -77,7 +74,7 @@ class StudyService {
         return res.data
       }
     } catch (err) {
-      console.log('获取记录失败，返回空数组')
+      console.error('获取记录失败:', err)
     }
 
     // 不再使用假数据，返回空数组让前端显示"暂无学习记录"
@@ -124,7 +121,7 @@ class StudyService {
         }
       }
     } catch (err) {
-      console.log('获取统计失败，返回零值')
+      console.error('获取统计失败:', err)
     }
 
     // 返回零值（不再使用模拟数据）
@@ -142,16 +139,14 @@ class StudyService {
    */
   async getHomeStatistics() {
     try {
-      console.log('[studyService] 调用 getHomeStatistics 云函数')
       const res = await callCloudFunction(CLOUD_FUNCTIONS.STUDY, {
         action: 'homeStats'
       })
-      console.log('[studyService] getHomeStatistics 云函数返回:', res)
       if (res.data && res.success && Object.keys(res.data).length > 0) {
         return res.data
       }
     } catch (err) {
-      console.error('[studyService] 获取首页统计失败，返回零值:', err)
+      console.error('[studyService] 获取首页统计失败:', err)
     }
 
     // 返回零值（不再使用硬编码的模拟数据）
@@ -184,7 +179,7 @@ class StudyService {
         return res.data
       }
     } catch (err) {
-      console.log('获取报告失败，返回空数据')
+      console.error('获取报告失败:', err)
     }
 
     // 返回空数据结构（不使用假数据）
@@ -209,7 +204,7 @@ class StudyService {
         return res.data
       }
     } catch (err) {
-      console.log('获取分析失败，返回空数据')
+      console.error('获取分析失败:', err)
     }
 
     // 返回空数据结构（不使用假数据）
@@ -233,7 +228,7 @@ class StudyService {
       })
       return res.success
     } catch (err) {
-      console.log('删除记录失败（本地模式）')
+      console.error('删除记录失败:', err)
       Taro.showToast({ title: '删除失败', icon: 'none' })
       return false
     }
@@ -253,7 +248,7 @@ class StudyService {
         return res.data
       }
     } catch (err) {
-      console.log('获取日历失败，返回空数组')
+      console.error('获取日历失败:', err)
     }
 
     // 返回空数组（不使用假数据）
@@ -284,7 +279,7 @@ class StudyService {
         return res.data
       }
     } catch (err) {
-      console.log('获取成就失败，计算本地数据')
+      console.error('获取成就失败:', err)
     }
 
     // 本地计算成就数据（基于 answer_history 和 study_records）

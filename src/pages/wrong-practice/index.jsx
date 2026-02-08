@@ -22,10 +22,7 @@ function WrongPractice() {
   const loadWrongQuestions = async () => {
     setLoading(true)
     try {
-      console.log('=== 加载错题列表 ===')
       const data = await questionService.getWrongQuestions(1, 100)
-      console.log('获取到错题数量:', data?.length || 0)
-      console.log('错题数据示例:', data?.[0] ? { id: data[0].id, questionId: data[0].questionId, type: data[0].type } : '无')
       setQuestions(data || [])
     } catch (err) {
       console.error('加载错题失败:', err)
@@ -40,10 +37,6 @@ function WrongPractice() {
       showToast({ title: '暂无错题', icon: 'none' })
       return
     }
-
-    console.log('=== 开始错题重做 ===')
-    console.log('错题数量:', questions.length)
-    console.log('即将跳转到 mode=wrong 模式')
 
     // 传递全部错题数量
     navigateTo({

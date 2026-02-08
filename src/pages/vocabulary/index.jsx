@@ -1,14 +1,8 @@
 /**
- * 词汇学习页面 - 选择题模式
- * 使用 usePractice Hook 重构，代码量大幅减少
+ * 词汇学习页面 - 使用通用练习组件
  */
-import React from 'react'
-import { View, Text } from '@tarojs/components'
-import Taro, { useDidShow, useShareAppMessage, useShareTimeline } from '@tarojs/taro'
-import { usePractice } from '../../hooks/usePractice'
-import eventBus, { EVENTS } from '../../utils/eventBus'
+import PracticePage from '../../components/common/PracticePage'
 import { pageShareConfigs } from '../../utils/share'
-import './index.less'
 
 // 词汇选择题库（80题精选）
 const VOCABULARY_QUESTIONS = [
@@ -27,8 +21,8 @@ const VOCABULARY_QUESTIONS = [
   // 词语运用（选词填空）
   { id: 'v011', type: 'fill', question: '依次填入横线处最恰当的词语：\n冰雪旅游、体育赛事等多领域协同发展，为社会____了更多的就业和发展机会。', options: ['A. 创造', 'B. 打造', 'C. 制造', 'D. 建造'], correctAnswer: 0, explanation: '"创造机会"是固定搭配。' },
   { id: 'v012', type: 'fill', question: '依次填入横线处最恰当的词语：\n财政投入与改善民生____相融合，____了城市运行水平的提高。', options: ['A. 提升/促进', 'B. 提高/促成', 'C. 提升/促成', 'D. 提高/促进'], correctAnswer: 0, explanation: '"提升"与水平搭配，"促进"与提高搭配。' },
-  { id: 'v013', type: 'fill', question: '依次填入横线处最恰当的词语：\n在新时代背景下，明确竞技体育的未来发展____和改良策略，实现竞技体育发展理念的____。', options: ['A. 导向/转移', 'B. 方向/转变', 'C. 导向/转变', 'D. 方向/转移'], correctAnswer: 2, explanation: '"发展导向"是常用搭配，"发展理念转变"也符合语境。' },
-  { id: 'v014', type: 'fill', question: '依次填入横线处最恰当的词语：\n体育比赛中，技术是完成战术配合的____，而战术的不断____和发展又对技术提出更高要求。', options: ['A. 基准/演示', 'B. 基础/演变', 'C. 基准/演变', 'D. 基础/演示'], correctAnswer: 1, explanation: '"基础"与"配合"搭配，"演变"与"发展"搭配。' },
+  { id: 'v013', type: 'fill', question: '在新时代背景下，明确竞技体育的未来发展____和改良策略，实现竞技体育发展理念的____。', options: ['A. 导向/转移', 'B. 方向/转变', 'C. 导向/转变', 'D. 方向/转移'], correctAnswer: 2, explanation: '"发展导向"是常用搭配，"发展理念转变"也符合语境。' },
+  { id: 'v014', type: 'fill', question: '体育比赛中，技术是完成战术配合的____，而战术的不断____和发展又对技术提出更高要求。', options: ['A. 基准/演示', 'B. 基础/演变', 'C. 基准/演变', 'D. 基础/演示'], correctAnswer: 1, explanation: '"基础"与"配合"搭配，"演变"与"发展"搭配。' },
   { id: 'v015', type: 'fill', question: '____竞技体育的快速发展，体育比赛会给人们带来更大的视觉震撼。', options: ['A. 随着', 'B. 随同', 'C. 伴随', 'D. 跟随'], correctAnswer: 0, explanation: '"随着"表示伴随情况的变化。' },
 
   // 词语书写判断
@@ -43,9 +37,9 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v022', type: 'distinguish', question: '"厚积薄发"形容：', options: ['A. 积累后释放', 'B. 长时间积累后慢慢释放', 'C. 多积少发', 'D. 发财致富'], correctAnswer: 1, explanation: '"厚积薄发"形容长时间积累，慢慢释放出来。' },
   { id: 'v023', type: 'distinguish', question: '"脍炙人口"形容：', options: ['A. 很多人吃', 'B. 美味可口', 'C. 为众人所称颂', 'D. 流行广泛'], correctAnswer: 2, explanation: '"脍炙人口"比喻好的诗文或事物为众人所称颂。' },
   { id: 'v024', type: 'distinguish', question: '"望洋兴叹"比喻：', options: ['A. 看海感叹', 'B. 力不从心', 'C. 无可奈何', 'D. 前途渺茫'], correctAnswer: 2, explanation: '"望洋兴叹"比喻做事时因力不胜任或没有条件而感到无可奈何。' },
-  { id: 'v025', type: 'distinguish', question: '"叶公好龙"比喻：', options: ['A. 真的喜欢龙', 'B. 口头上说爱好，实际不真爱好', 'C. 喜欢动物', 'D. 爱好广泛'], correctAnswer: 1, explanation: '"叶公好龙"比喻口头上说某事物，实际不真爱好。' },
+  { id: 'v025', type: 'distinguish', question: '"叶公好龙"比喻：', options: ['A. 真的喜欢龙', 'B. 口头上说爱好，实际不真爱好', 'C. 喜欢动物', 'D. 爱好广泛'], correctAnswer: 1, explanation: '"叶公好龙"比喻口头上说某事物，实际上并不真爱好。' },
   { id: 'v026', type: 'distinguish', question: '"杞人忧天"比喻：', options: ['A. 忧虑天气', 'B. 不必要的忧虑', 'C. 担心天下', 'D. 爱管闲事'], correctAnswer: 1, explanation: '"杞人忧天"比喻不必要的或缺乏根据的忧虑和担心。' },
-  { id: 'v027', type: 'distinguish', question: '"杯弓蛇影"比喻：', options: ['A. 杯子和蛇', 'B. 疑神疑鬼', 'C. 恐惧害怕', 'D. 危险重重'], correctAnswer: 1, explanation: '"杯弓蛇影"比喻因疑神疑鬼而引起恐惧。' },
+  { id: 'v27', type: 'distinguish', question: '"杯弓蛇影"比喻：', options: ['A. 杯子和蛇', 'B. 疑神疑鬼', 'C. 恐惧害怕', 'D. 危险重重'], correctAnswer: 1, explanation: '"杯弓蛇影"比喻因疑神疑鬼而引起恐惧。' },
   { id: 'v028', type: 'distinguish', question: '"画蛇添足"比喻：', options: ['A. 画画很好', 'B. 做事多余的事反不好', 'C. 做多余的事', 'D. 画蛇技巧高超'], correctAnswer: 1, explanation: '"画蛇添足"比喻做了多余的事，非但无益，反而不合适。' },
   { id: 'v029', type: 'distinguish', question: '"守株待兔"比喻：', options: ['A. 等待机会', 'B. 死守经验不知变通', 'C. 耐心等待', 'D. 期盼成功'], correctAnswer: 1, explanation: '"守株待兔"比喻死守狭隘经验，不知变通。' },
   { id: 'v030', type: 'distinguish', question: '"刻舟求剑"比喻：', options: ['A. 记性好', 'B. 拘泥成法不知变通', 'C. 做事坚持', 'D. 纪念深刻'], correctAnswer: 1, explanation: '"刻舟求剑"比喻拘泥成法，不知道变通。' },
@@ -83,7 +77,7 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v056', type: 'usage', question: '"迫不及待"的意思是：', options: ['A. 等待不及', 'B. 急迫得不能等待', 'C. 不要等待', 'D. 不能等待'], correctAnswer: 1, explanation: '"迫不及待"形容心情急切，急迫得不能等待。' },
   { id: 'v057', type: 'usage', question: '"兴高采烈"形容：', options: ['A. 兴致高', 'B. 兴致高昂，情绪热烈', 'C. 高兴采花', 'D. 热烈讨论'], correctAnswer: 1, explanation: '"兴高采烈"形容兴致高，情绪热烈。' },
   { id: 'v058', type: 'usage', question: '"小心翼翼"形容：', options: ['A. 非常小心', 'B. 举动谨慎，不敢疏忽', 'C. 容易恐惧', 'D. 小心眼'], correctAnswer: 1, explanation: '"小心翼翼"形容举动谨慎，不敢疏忽。' },
-  { id: 'v059', type: 'usage', question: '"恍然大悟"的意思是：', options: ['A. 突然明白', 'B. 忽然大悟', 'C. 恍惚明白', 'D. 大悟'], correctAnswer: 1, explanation: '"恍然大悟"形容一下子明白过来。' },
+  { id: 'v059', type: 'usage', question: '"恍然大悟"的意思是：', options: ['A. 突然明白', 'B. 忽然大悟', 'C. 恍惚明白', 'D. 大悟'], correctAnswer: 0, explanation: '"恍然大悟"形容一下子明白过来。' },
   { id: 'v060', type: 'usage', question: '"不约而同"的意思是：', options: ['A. 没有约定', 'B. 事先没有商量而行动一致', 'C. 不同意', 'D. 不一致'], correctAnswer: 1, explanation: '"不约而同"指事先没有商量而相互一致。' },
   { id: 'v061', type: 'usage', question: '"全神贯注"形容：', options: ['A. 全部精神集中', 'B. 注意力高度集中', 'C. 全神投入', 'D. 精神饱满'], correctAnswer: 1, explanation: '"全神贯注"形容注意力高度集中。' },
   { id: 'v062', type: 'usage', question: '"目不转睛"形容：', options: ['A. 眼睛不转', 'B. 盯着看', 'C. 注意力集中地看着', 'D. 看不清'], correctAnswer: 2, explanation: '"目不转睛"形容注意力集中地看着。' },
@@ -102,167 +96,20 @@ const VOCABULARY_QUESTIONS = [
   { id: 'v075', type: 'understand', question: '"心旷神怡"形容：', options: ['A. 心情舒畅', 'B. 精神愉快', 'C. 心胸开阔，精神愉快', 'D. 高兴'], correctAnswer: 2, explanation: '"心旷神怡"形容心胸开阔，精神愉快。' },
   { id: 'v076', type: 'understand', question: '"赏心悦目"形容：', options: ['A. 看着舒服', 'B. 因欣赏美好景物而心情舒畅', 'C. 美好', 'D. 悦目'], correctAnswer: 1, explanation: '"赏心悦目"形容因欣赏美好的景物而心情舒畅。' },
   { id: 'v077', type: 'understand', question: '"心花怒放"形容：', options: ['A. 高兴', 'B. 极其高兴', 'C. 开心', 'D. 兴奋'], correctAnswer: 1, explanation: '"心花怒放"形容极其高兴。' },
-  { id: 'v078', type: 'understand', question: '"欣喜若狂"的意思是：', options: ['A. 高兴得发狂', 'B. 高兴到了极点', 'C. 狂喜', 'D. 欣喜'], correctAnswer: 1, explanation: '"欣喜若狂"形容高兴到了极点。' },
+  { id: 'v078', type: 'understand', question: '"欣喜若狂"的意思是：', options: ['A. 高兴得发狂', 'B. 高兴到了极点', 'C. 狂喜', 'D''], correctAnswer: 1, explanation: '"欣喜若狂"形容高兴到了极点。' },
   { id: 'v079', type: 'understand', question: '"心平气和"形容：', options: ['A. 平静', 'B. 心情平静，态度温和', 'C. 和气', 'D. 冷静'], correctAnswer: 1, explanation: '"心平气和"形容心情平静，态度温和。' },
   { id: 'v080', type: 'understand', question: '"从容不迫"的意思是：', options: ['A. 不慌不忙', 'B. 非常镇静，不慌不忙', 'C. 冷静', 'D. 沉着'], correctAnswer: 1, explanation: '"从容不迫"形容非常镇静，不慌不忙。' }
 ]
 
-function Vocabulary() {
-  const {
-    questions,
-    currentIndex,
-    selectedAnswer,
-    showResult,
-    score,
-    completed,
-    isFavorited,
-    favoriteLoading,
-    loading,
-    currentQuestion,
-    progress,
-    startPractice,
-    toggleFavorite,
-    selectAnswer,
-    nextQuestion,
-    reset,
-  } = usePractice({
-    questionsData: VOCABULARY_QUESTIONS,
-    practiceType: 'vocabulary',
-  })
-
-  // 页面生命周期
-  useDidShow(() => {
-    startPractice()
-  })
-
-  // 启用页面分享
-  useShareAppMessage(() => {
-    return pageShareConfigs.vocabulary
-  })
-
-  useShareTimeline(() => {
-    return {
-      title: pageShareConfigs.vocabulary.title,
-      query: ''
-    }
-  })
-
-  if (loading || questions.length === 0) {
-    return (
-      <View className="vocabulary-page">
-        <View className="practice-loading">加载中...</View>
-      </View>
-    )
-  }
-
-  if (completed) {
-    const scorePercent = Math.round((score / questions.length) * 100)
-    const praise = scorePercent >= 80 ? '太棒了！' : scorePercent >= 60 ? '继续加油！' : '再练习一下吧！'
-
-    return (
-      <View className="vocabulary-page">
-        <View className="result-page">
-          <View className="result-card">
-            <Text className="result-title">练习完成！</Text>
-            <Text className="result-score">{score} / {questions.length}</Text>
-            <Text className="result-desc">{praise}</Text>
-            <Text className="result-desc">正确率：{scorePercent}%</Text>
-            <View className="result-actions">
-              <View className="action-btn secondary" onClick={reset}>再练一次</View>
-              <View className="action-btn" onClick={() => Taro.navigateBack()}>返回</View>
-            </View>
-          </View>
-        </View>
-      </View>
-    )
-  }
-
+function VocabularyPage() {
   return (
-    <View className="vocabulary-page">
-      <View className="content-scroll">
-        {/* 进度条 */}
-        <View className="progress-bar">
-          <View className="practice-progress-fill" style={{ width: `${progress.percent}%` }}></View>
-        </View>
-
-        {/* 题目卡片 */}
-        <View className="question-card">
-          <View className="question-header">
-            <View className="question-num">第 {progress.current} / {progress.total} 题</View>
-            <View className="question-actions">
-              <View
-                className={`favorite-btn ${isFavorited ? 'favorited' : ''} ${favoriteLoading ? 'loading' : ''}`}
-                onClick={toggleFavorite}
-              >
-                <Text className="favorite-icon">{isFavorited ? '★' : '☆'}</Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="question-content">
-            <Text className="question-text">{currentQuestion?.question}</Text>
-          </View>
-
-          {/* 选项列表 */}
-          <View className="options-list">
-            {currentQuestion?.options?.map((option, index) => {
-              const isSelected = selectedAnswer === index
-              const isCorrect = index === currentQuestion.correctAnswer
-              const showIcon = showResult && (isCorrect || isSelected)
-
-              return (
-                <View
-                  key={index}
-                  className={`option-item ${isSelected ? 'selected' : ''} ${
-                    showResult && isCorrect ? 'correct' : ''
-                  } ${showResult && isSelected && !isCorrect ? 'wrong' : ''
-                  }`}
-                  onClick={() => selectAnswer(index)}
-                >
-                  <View className="option-label">
-                    <Text className="option-label-text">{String.fromCharCode(65 + index)}</Text>
-                  </View>
-                  <View className="option-content">
-                    <Text className="option-text">{option}</Text>
-                  </View>
-                  {showIcon && isCorrect && (
-                    <View className="option-icon">
-                      <Text className="icon-check">✓</Text>
-                    </View>
-                  )}
-                  {showIcon && isSelected && !isCorrect && (
-                    <View className="option-icon">
-                      <Text className="icon-cross">✗</Text>
-                    </View>
-                  )}
-                </View>
-              )
-            })}
-          </View>
-
-          {/* 解析 */}
-          {showResult && currentQuestion?.explanation && (
-            <View className="explanation-box">
-              <Text className="explanation-label">解析：</Text>
-              <Text className="explanation-text">{currentQuestion.explanation}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* 底部操作栏 */}
-        <View className="practice-actions">
-          <View className="practice-btn secondary" onClick={() => Taro.navigateBack()}>返回</View>
-          {showResult ? (
-            <View className="practice-btn" onClick={nextQuestion}>
-              {currentIndex < questions.length - 1 ? '下一题' : '完成'}
-            </View>
-          ) : (
-            <View className="practice-btn disabled">请选择答案</View>
-          )}
-        </View>
-      </View>
-    </View>
+    <PracticePage
+      questionsData={VOCABULARY_QUESTIONS}
+      practiceType="vocabulary"
+      shareConfig={pageShareConfigs.vocabulary}
+      pageClassName="vocabulary-page"
+    />
   )
 }
 
-export default Vocabulary
+export default VocabularyPage

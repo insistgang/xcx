@@ -13,7 +13,6 @@ if (process.env.TARO_ENV === 'weapp') {
       // 不指定 env，使用当前云环境（可在微信开发者工具中切换）
       traceUser: true
     })
-    console.log('云开发初始化成功')
   } catch (e) {
     console.error('云开发初始化失败:', e)
   }
@@ -22,7 +21,7 @@ if (process.env.TARO_ENV === 'weapp') {
 function App({ children }) {
 
   useLaunch(() => {
-    console.log('App launched')
+    // App launched
   })
 
   return (

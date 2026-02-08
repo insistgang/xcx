@@ -4,6 +4,7 @@
 import Taro from '@tarojs/taro'
 import { callCloudFunction } from './request'
 import { CLOUD_FUNCTIONS, QUESTION_TYPES, DEFAULT_PAGE } from '../utils/constants'
+import logger from '../utils/logger'
 
 // ==================== 扩展题目数据生成函数 ====================
 // 生成扩展拼音题目 (py021-py200)
@@ -579,8 +580,7 @@ class QuestionService {
    * 获取随机题目
    */
   async getRandomQuestions(count = 10, type = null) {
-    console.log('getRandomQuestions 被调用, count:', count, 'type:', type)
-
+    logger.cloudFunction('question', 'random', { count, type })
     // 先尝试云函数
     try {
       const res = await callCloudFunction(CLOUD_FUNCTIONS.QUESTION, {
@@ -589,11 +589,10 @@ class QuestionService {
         type
       })
       if (res && res.data && res.data.length > 0) {
-        console.log('从云函数获取到题目，数量:', res.data.length)
         return res.data
       }
     } catch (err) {
-      console.log('云函数调用失败，使用本地模拟数据')
+      logger.cloudFunctionError('question', 'random', err)
     }
 
     // 使用本地模拟数据
@@ -602,7 +601,6 @@ class QuestionService {
       questions = MOCK_QUESTIONS[type]
     }
     const result = shuffleArray(questions).slice(0, Math.min(count, questions.length))
-    console.log('返回本地模拟题目，数量:', result.length)
     return result
   }
 
@@ -610,7 +608,7 @@ class QuestionService {
    * 按类型获取题目
    */
   async getQuestionsByType(type, page = DEFAULT_PAGE.page, pageSize = DEFAULT_PAGE.pageSize) {
-    console.log('getQuestionsByType 被调用, type:', type, 'page:', page, 'pageSize:', pageSize)
+    logger.cloudFunction('question', 'list', { type, page, pageSize })
 
     // 先尝试云函数
     try {
@@ -621,11 +619,10 @@ class QuestionService {
         pageSize
       })
       if (res && res.data && res.data.length > 0) {
-        console.log('从云函数获取到题目，数量:', res.data.length)
         return res.data
       }
     } catch (err) {
-      console.log('云函数调用失败，使用本地模拟数据')
+      logger.cloudFunctionError('question', 'random', err)
     }
 
     // 使用本地模拟数据
@@ -638,7 +635,6 @@ class QuestionService {
     }
 
     // 如果没有匹配的类型，返回随机题目
-    console.log('未找到匹配类型，返回随机题目')
     const allQuestions = getAllMockQuestions()
     return shuffleArray(allQuestions).slice(0, Math.min(pageSize, allQuestions.length))
   }
@@ -748,9 +744,7 @@ class QuestionService {
    * @param {object} questionData - 题目完整数据（可选）
    */
   async toggleFavorite(questionId, questionData = null) {
-    console.log('=== questionService.toggleFavorite ===')
-    console.log('questionId:', questionId)
-    console.log('questionData:', questionData)
+    logger.cloudFunction('question', 'favorite', { questionId, hasData: !!questionData })
 
     try {
       const payload = {
@@ -762,15 +756,11 @@ class QuestionService {
         payload.questionData = questionData
       }
 
-      console.log('=== 发送到云函数的 payload ===', payload)
-
       const res = await callCloudFunction(CLOUD_FUNCTIONS.QUESTION, payload)
-
-      console.log('=== 云函数返回结果 ===', res)
 
       return res.success
     } catch (err) {
-      console.error('=== toggleFavorite 错误 ===', err)
+      logger.error('question', 'toggleFavorite error', err)
       Taro.showToast({ title: '收藏失败', icon: 'none' })
       return false
     }
