@@ -13,7 +13,9 @@ function PracticePage({
   questionsData,
   practiceType,
   shareConfig,
-  pageClassName
+  pageClassName,
+  useCloud = false,
+  count = 10
 }) {
   const {
     questions,
@@ -35,6 +37,8 @@ function PracticePage({
   } = usePractice({
     questionsData,
     practiceType,
+    useCloud,
+    count
   })
 
   // 页面生命周期
