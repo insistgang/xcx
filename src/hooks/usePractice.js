@@ -1,10 +1,13 @@
 /**
  * 练习页面通用 Hook
  * 封装词汇、成语、拼音、病句等练习页面的共同逻辑
+ * 支持从云数据库获取题目
  *
  * @param {Object} options - 配置选项
- * @param {Array} options.questionsData - 题目数据
+ * @param {Array} options.questionsData - 题目数据（本地模式）
  * @param {string} options.practiceType - 练习类型 (vocabulary/idiom/pinyin/correction)
+ * @param {boolean} options.useCloud - 是否从云数据库获取题目
+ * @param {number} options.count - 获取题目数量（云数据库模式）
  * @param {Function} options.onComplete - 完成回调
  * @returns {Object} 练习状态和方法
  */
@@ -15,6 +18,17 @@ import studyService from '../services/study'
 import questionService from '../services/question'
 import eventBus, { EVENTS } from '../utils/eventBus'
 import { ErrorHandler, ErrorTypes } from '../utils/errorHandler'
+import { callCloudFunction } from '../services/request'
+import { CLOUD_FUNCTIONS } from '../utils/constants'
+import logger from '../utils/logger'
+
+// 题目类型映射
+const TYPE_MAPPING = {
+  vocabulary: 'vocabulary',
+  idiom: 'idiom',
+  pinyin: 'pinyin',
+  correction: 'correction'
+}
 
 // 收藏状态缓存（跨实例共享）
 let FAVORITES_CACHE = new Set()
@@ -22,6 +36,8 @@ let FAVORITES_CACHE = new Set()
 export const usePractice = ({
   questionsData,
   practiceType = 'vocabulary',
+  useCloud = false,
+  count = 10,
   onComplete = null,
 } = {}) => {
   // 状态管理
@@ -49,12 +65,60 @@ export const usePractice = ({
   }
 
   /**
-   * 启动练习
+   * 从云数据库加载题目
    */
-  const startPractice = useCallback(() => {
+  const loadFromCloud = useCallback(async () => {
+    try {
+      setLoading(true)
+      const mappedType = TYPE_MAPPING[practiceType] || practiceType
+
+      logger.cloudFunction('question', 'random', { count, type: mappedType })
+
+      const res = await callCloudFunction(CLOUD_FUNCTIONS.QUESTION, {
+        action: 'random',
+        count,
+        type: mappedType
+      })
+
+      if (res.success && res.data && res.data.length > 0) {
+        logger.info('usePractice', `从云数据库获取 ${res.data.length} 道题目`)
+
+        // 转换数据格式
+        const formattedQuestions = res.data.map(q => ({
+          id: q._id || q.id,
+          type: q.type || practiceType,
+          question: q.question || q.title,
+          options: q.options || [],
+          correctAnswer: q.correctAnswer !== undefined ? q.correctAnswer : q.answer,
+          explanation: q.explanation || q.analysis || ''
+        }))
+
+        setQuestions(formattedQuestions)
+        setCurrentIndex(0)
+        setSelectedAnswer(null)
+        setShowResult(false)
+        setScore(0)
+        setCompleted(false)
+        userAnswers.current = {}
+        setLoading(false)
+      } else {
+        throw new Error('云数据库返回数据为空')
+      }
+    } catch (err) {
+      logger.cloudFunctionError('question', 'random', err)
+      logger.warn('usePractice', '云数据库获取失败，使用本地题目')
+      // 降级到本地题目
+      loadFromLocal()
+    }
+  }, [practiceType, count])
+
+  /**
+   * 从本地加载题目（降级方案）
+   */
+  const loadFromLocal = useCallback(() => {
     // 随机打乱题目
     const shuffled = [...questionsData].sort(() => Math.random() - 0.5)
-    const selectedQuestions = shuffled.slice(0, 10) // 取10题
+    const selectedQuestions = shuffled.slice(0, count)
 
     setQuestions(selectedQuestions)
     setCurrentIndex(0)
@@ -63,7 +127,19 @@ export const usePractice = ({
     setScore(0)
     setCompleted(false)
     userAnswers.current = {}
-  }, [questionsData])
+    setLoading(false)
+  }, [questionsData, count])
+
+  /**
+   * 启动练习
+   */
+  const startPractice = useCallback(async () => {
+    if (useCloud) {
+      await loadFromCloud()
+    } else {
+      loadFromLocal()
+    }
+  }, [useCloud, loadFromCloud, loadFromLocal])
 
   /**
    * 加载收藏列表
