@@ -2,37 +2,43 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#4A90E2" />
   <title>体育生语文智能学习</title>
   <link rel="stylesheet" href="app.css" />
 </head>
 <body>
-  <div class="phone">
-    <div class="nav" id="nav-title">语文助手</div>
-    <section class="screen active" data-screen="home" id="home"></section>
-    <section class="screen" data-screen="exercise" id="exercise"></section>
-    <section class="screen" data-screen="practice" id="practice"></section>
-    <section class="screen" data-screen="chat" id="chat">
-      <div class="chat">
-        <div class="msgs" id="messages"></div>
-        <form class="composer" id="chat-form">
-          <input id="chat-input" placeholder="问一个词语或成语" />
-          <button type="submit" id="send">发送</button>
-        </form>
-      </div>
-    </section>
-    <section class="screen" data-screen="profile" id="profile"></section>
-    <section class="screen" data-screen="record" id="record"></section>
-    <section class="screen" data-screen="report" id="report"></section>
-    <section class="screen" data-screen="login" id="login"></section>
-    <nav class="tabbar">
-      <button data-tab="home" class="active"><img src="tabbar/home.png" alt="" />首页</button>
-      <button data-tab="exercise"><img src="tabbar/exercise.png" alt="" />练习</button>
-      <button data-tab="chat"><img src="tabbar/chat.png" alt="" />答疑</button>
-      <button data-tab="profile"><img src="tabbar/profile.png" alt="" />我的</button>
-    </nav>
+  <div class="stage">
+    <div class="phone" id="phone">
+      <header class="nav" id="nav">
+        <button type="button" id="nav-back" aria-label="返回">‹</button>
+        <h1 id="nav-title">语文助手</h1>
+      </header>
+      <main id="app"></main>
+      <nav class="tabbar" id="tabbar">
+        <button type="button" data-tab="home">
+          <img alt="" src="tabbar/home-active.png" data-off="tabbar/home.png" data-on="tabbar/home-active.png" />
+          <span>首页</span>
+        </button>
+        <button type="button" data-tab="exercise">
+          <img alt="" src="tabbar/exercise.png" data-off="tabbar/exercise.png" data-on="tabbar/exercise-active.png" />
+          <span>练习</span>
+        </button>
+        <button type="button" data-tab="chat">
+          <img alt="" src="tabbar/chat.png" data-off="tabbar/chat.png" data-on="tabbar/chat-active.png" />
+          <span>答疑</span>
+        </button>
+        <button type="button" data-tab="profile">
+          <img alt="" src="tabbar/profile.png" data-off="tabbar/profile.png" data-on="tabbar/profile-active.png" />
+          <span>我的</span>
+        </button>
+      </nav>
+      <div id="modal" class="modal" hidden></div>
+      <div id="toast" class="toast" hidden></div>
+    </div>
   </div>
   <script src="questions.js"></script>
+  <script src="keyed.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
