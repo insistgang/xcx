@@ -1,0 +1,80 @@
+:root {
+  --primary: #5b9bd5;
+  --primary-dark: #4a7ca7;
+  --bg: #f8fafc;
+  --text: #1f2937;
+  --muted: #9ca3af;
+  --card: #fff;
+  --shadow: 0 4px 12px rgba(0, 0, 0, .08);
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: #dbe4ee; font-family: system-ui, "PingFang SC", sans-serif; color: var(--text); }
+.phone { width: min(430px, 100%); min-height: 100vh; margin: 0 auto; background: var(--bg); position: relative; overflow: hidden; }
+.nav { height: 52px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 650; background: #4a90e2; position: sticky; top: 0; z-index: 5; }
+.screen { display: none; min-height: calc(100vh - 52px - 64px); padding-bottom: 24px; }
+.screen.active { display: block; }
+.tabbar { position: sticky; bottom: 0; height: 64px; background: #fff; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid #eef2f6; }
+.tabbar button { border: 0; background: transparent; color: #999; font-size: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.tabbar button.active { color: #4a90e2; }
+.tabbar img { width: 24px; height: 24px; }
+.header { background: linear-gradient(135deg, #5b9bd5, #7fa8d9); color: #fff; padding: 28px 16px 20px; position: relative; overflow: hidden; }
+.header::before, .header::after { content: ""; position: absolute; border-radius: 50%; background: rgba(255,255,255,.12); }
+.header::before { width: 150px; height: 150px; top: -40px; right: -40px; }
+.header::after { width: 100px; height: 100px; bottom: -30px; left: -30px; }
+.hello { display: flex; gap: 12px; align-items: center; position: relative; z-index: 1; }
+.avatar { width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,.3); display: grid; place-items: center; font-size: 24px; font-weight: 700; border: 2px solid rgba(255,255,255,.45); }
+.hello h1 { margin: 0; font-size: 22px; }
+.hello p { margin: 4px 0 0; opacity: .9; }
+.banner { margin-top: 14px; display: inline-flex; gap: 8px; align-items: center; background: rgba(255,255,255,.25); border-radius: 999px; padding: 8px 14px; position: relative; z-index: 1; }
+.stats { margin: -20px 16px 0; background: #fff; border-radius: 16px; display: flex; box-shadow: var(--shadow); position: relative; z-index: 2; }
+.stat { flex: 1; text-align: center; padding: 18px 0; }
+.stat b { display: block; font-size: 28px; }
+.stat span { color: var(--muted); font-size: 12px; }
+.blue { color: #5b9bd5; } .orange { color: #ffb84d; } .green { color: #6fcf97; }
+.section { margin: 22px 16px 0; }
+.section h2 { margin: 0 0 12px; font-size: 18px; display: flex; justify-content: space-between; }
+.section h2 span { color: var(--muted); font-size: 14px; font-weight: 500; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.module, .card { background: #fff; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.module { padding: 18px 12px; text-align: center; position: relative; overflow: hidden; border: 0; width: 100%; }
+.module i { position: absolute; left: 0; right: 0; top: 0; height: 4px; }
+.module .icon { font-size: 32px; }
+.module strong, .module small { display: block; }
+.module small { color: var(--muted); margin-top: 4px; }
+.quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.quick button { border: 0; background: #f0f9ff; border-radius: 12px; padding: 12px 4px; }
+.quick .icon { width: 40px; height: 40px; margin: 0 auto 6px; border-radius: 10px; background: #fff; display: grid; place-items: center; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.quote { margin: 22px 16px 28px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: #fff; border-radius: 18px; padding: 28px 20px; text-align: center; position: relative; overflow: hidden; }
+.quote::before { content: "“"; position: absolute; font-size: 90px; left: 8px; top: -18px; opacity: .15; }
+.dots { display: flex; gap: 6px; justify-content: center; }
+.dots i { width: 6px; height: 6px; border-radius: 99px; background: rgba(255,255,255,.35); display: block; }
+.dots i.on { width: 16px; background: #fff; }
+.fragment { border: 0; color: #fff; border-radius: 16px; padding: 22px 8px; box-shadow: 0 8px 18px rgba(0,0,0,.12); }
+.g1 { background: linear-gradient(135deg, #fb923c, #ef4444); }
+.g2 { background: linear-gradient(135deg, #06b6d4, #10b981); }
+.g3 { background: linear-gradient(135deg, #34d399, #059669); }
+.g4 { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.review { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.review button { border: 0; border-radius: 14px; padding: 18px; background: #fff; }
+.type { display: flex; align-items: center; gap: 12px; background: #fff; border-radius: 14px; padding: 12px; margin-bottom: 10px; width: 100%; border: 0; text-align: left; }
+.badge { margin-left: auto; color: #fff; border-radius: 999px; min-width: 28px; text-align: center; padding: 2px 8px; }
+.q-card { margin: 16px; background: #fff; border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+.opt { display: block; width: 100%; text-align: left; margin-top: 10px; padding: 12px; border-radius: 12px; border: 1px solid #e5e7eb; background: #fff; }
+.opt.pick { border-color: #5b9bd5; background: #f0f9ff; }
+.row { display: flex; gap: 8px; margin-top: 16px; }
+.row button, .primary { flex: 1; border: 0; border-radius: 12px; padding: 12px; background: #4a90e2; color: #fff; font-weight: 650; }
+.ghost { background: #e5e7eb !important; color: #1f2937 !important; }
+.chat { display: flex; flex-direction: column; height: calc(100vh - 116px); }
+.msgs { flex: 1; overflow: auto; padding: 16px; }
+.bubble { max-width: 80%; padding: 10px 12px; border-radius: 14px; margin: 8px 0; white-space: pre-wrap; }
+.bot { background: #fff; }
+.me { background: #dbeafe; margin-left: auto; }
+.composer { display: flex; gap: 8px; padding: 10px; background: #fff; }
+.composer input { flex: 1; border: 1px solid #e5e7eb; border-radius: 999px; padding: 10px 14px; }
+.menu { margin: 16px; background: #fff; border-radius: 16px; }
+.menu button { width: 100%; border: 0; background: transparent; display: flex; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #f3f4f6; font-size: 16px; }
+.achieve { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.achieve div { background: #fff; border-radius: 12px; padding: 12px; opacity: .45; }
+.achieve div.on { opacity: 1; }
+.login { padding: 40px 24px; text-align: center; }
+.login input { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #e5e7eb; margin: 12px 0; }
