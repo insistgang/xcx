@@ -350,6 +350,12 @@ function finishPractice() {
     day: new Date().toISOString().slice(0, 10)
   });
   state.stats.records = state.stats.records.slice(0, 50);
+  if (session.from === "favorite") {
+    session.queue.forEach((item) => {
+      const fav = state.stats.favorites.find((row) => row.id === qid(item));
+      if (fav) fav.practiced = true;
+    });
+  }
   session.done = true;
   save();
 }
@@ -637,7 +643,7 @@ function renderFavorite() {
       ${list.length ? `<button class="hero-btn" data-act="redo-fav">开始练习</button>` : ""}
     </div>
     <div class="section"><h2>收藏列表 <span>共 ${list.length} 题</span></h2>
-      ${list.length ? list.map((item, index) => `<article class="q-list" style="margin:0 0 10px"><div class="q-top"><span class="pill" style="background:${catMeta(item.cat)[4]}">${esc(item.name || "题目")}</span><span>第 ${index + 1} 题</span></div><p>${esc(item.q)}</p><small>⭐ 已收藏</small></article>`).join("") : `<div class="empty">还没有收藏。做题时点星星即可加入。</div>`}
+      ${list.length ? list.map((item, index) => `<button class="q-list" data-act="fav-one" data-i="${index}" style="display:block;width:calc(100% - 32px);margin:0 16px 10px;text-align:left"><div class="q-top"><span class="pill" style="background:${catMeta(item.cat)[4]}">${esc(item.name || "题目")}</span><span>第 ${index + 1} 题</span></div><p>${esc(item.q)}</p><small>${item.practiced ? "已练习" : "⭐ 已收藏，点此单题练习"}</small></button>`).join("") : `<div class="empty">还没有收藏。做题时点星星即可加入。</div>`}
     </div>`;
 }
 function startFrom(list, title, from) {
@@ -728,6 +734,10 @@ $("app").addEventListener("click", async (event) => {
   }
   if (act === "redo-wrong") startFrom(state.stats.wrong, "错题重做", "wrong");
   if (act === "redo-fav") startFrom(state.stats.favorites, "收藏练习", "favorite");
+  if (act === "fav-one") {
+    const item = state.stats.favorites[Number(node.dataset.i)];
+    if (item) startFrom([item], "收藏练习", "favorite");
+  }
   if (act === "exam-start") { state.exam.started = true; state.exam.finished = false; render(); }
   if (act === "exam-card") { state.exam.showCard = !state.exam.showCard; render(); }
   if (act === "jump") { state.exam.index = Number(node.dataset.i); state.exam.showCard = false; render(); }
